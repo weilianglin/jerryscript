@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include "ecma-builtins.h"
+#include "ecma-eval.h"
+#include "ecma-globals.h"
 #include "jrt.h"
 #include "opcodes.h"
 #include "opcodes-ecma-support.h"
@@ -98,7 +101,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
   }
   else if (type_value_right == OPCODE_ARG_TYPE_STRING)
   {
-    const literal_index_t lit_id = serializer_get_literal_id_by_uid (src_val_descr, int_data->pos);
+    const literal_index_t lit_id = serializer_get_literal_id_by_uid (src_val_descr, int_data->opcodes_p, int_data->pos);
     ecma_string_t *string_p = ecma_new_ecma_string_from_lit_index (lit_id);
 
     ret_value = set_variable_value (int_data,
@@ -127,7 +130,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
   {
     ecma_number_t *num_p = int_data->tmp_num_p;
 
-    const literal_index_t lit_id = serializer_get_literal_id_by_uid (src_val_descr, int_data->pos);
+    const literal_index_t lit_id = serializer_get_literal_id_by_uid (src_val_descr, int_data->opcodes_p, int_data->pos);
     const literal lit = serializer_get_literal_by_id (lit_id);
     JERRY_ASSERT (lit.type == LIT_NUMBER);
 
@@ -142,7 +145,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
   {
     ecma_number_t *num_p = int_data->tmp_num_p;
 
-    const literal_index_t lit_id = serializer_get_literal_id_by_uid (src_val_descr, int_data->pos);
+    const literal_index_t lit_id = serializer_get_literal_id_by_uid (src_val_descr, int_data->opcodes_p, int_data->pos);
     const literal lit = serializer_get_literal_by_id (lit_id);
     JERRY_ASSERT (lit.type == LIT_NUMBER);
 
@@ -398,7 +401,7 @@ opfunc_var_decl (opcode_t opdata, /**< operation data */
                  int_data_t *int_data) /**< interpreter context */
 {
   const literal_index_t lit_id = serializer_get_literal_id_by_uid (opdata.data.var_decl.variable_name,
-                                                                   int_data->pos);
+                                                                   int_data->opcodes_p, int_data->pos);
   JERRY_ASSERT (lit_id != INVALID_LITERAL);
 
   ecma_string_t *var_name_string_p = ecma_new_ecma_string_from_lit_index (lit_id);
@@ -450,7 +453,8 @@ function_declaration (int_data_t *int_data, /**< interpreter context */
     read_meta_opcode_counter (OPCODE_META_TYPE_FUNCTION_END, int_data) + int_data->pos);
   int_data->pos++;
 
-  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (int_data->pos++);
+  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (int_data->opcodes_p,
+                                                              int_data->pos++);
 
   if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT)
   {
@@ -469,6 +473,7 @@ function_declaration (int_data_t *int_data, /**< interpreter context */
 
   ecma_completion_value_t ret_value = ecma_op_function_declaration (int_data->lex_env_p,
                                                                     function_name_string_p,
+                                                                    int_data->opcodes_p,
                                                                     int_data->pos,
                                                                     args_names,
                                                                     args_number,
@@ -496,6 +501,7 @@ opfunc_func_decl_n (opcode_t opdata, /**< operation data */
   const ecma_length_t params_number = opdata.data.func_decl_n.arg_list;
 
   literal_index_t function_name_lit_id = serializer_get_literal_id_by_uid (function_name_idx,
+                                                                           int_data->opcodes_p,
                                                                            int_data->pos);
 
   int_data->pos++;
@@ -557,7 +563,8 @@ opfunc_func_expr_n (opcode_t opdata, /**< operation data */
                                                                        int_data) + int_data->pos);
   int_data->pos++;
 
-  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (int_data->pos++);
+  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (int_data->opcodes_p,
+                                                              int_data->pos++);
 
   if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT)
   {
@@ -578,7 +585,9 @@ opfunc_func_expr_n (opcode_t opdata, /**< operation data */
   {
     scope_p = ecma_create_decl_lex_env (int_data->lex_env_p);
 
-    const literal_index_t lit_id = serializer_get_literal_id_by_uid (function_name_lit_idx, lit_oc);
+    const literal_index_t lit_id = serializer_get_literal_id_by_uid (function_name_lit_idx,
+                                                                     int_data->opcodes_p,
+                                                                     lit_oc);
     JERRY_ASSERT (lit_id != INVALID_LITERAL);
 
     function_name_string_p = ecma_new_ecma_string_from_lit_index (lit_id);
@@ -596,6 +605,7 @@ opfunc_func_expr_n (opcode_t opdata, /**< operation data */
                                                               scope_p,
                                                               is_strict,
                                                               do_instantiate_arguments_object,
+                                                              int_data->opcodes_p,
                                                               int_data->pos);
 
   ret_value = set_variable_value (int_data, lit_oc,
@@ -654,7 +664,7 @@ opfunc_call_n (opcode_t opdata, /**< operation data */
   idx_t this_arg_var_idx = INVALID_VALUE;
   idx_t args_number;
 
-  opcode_t next_opcode = vm_get_opcode (int_data->pos);
+  opcode_t next_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
   if (next_opcode.op_idx == __op__idx_meta
       && next_opcode.data.meta.type == OPCODE_META_TYPE_THIS_ARG)
   {
@@ -707,19 +717,83 @@ opfunc_call_n (opcode_t opdata, /**< operation data */
     {
       ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
 
-      ECMA_TRY_CATCH (call_ret_value,
-                      ecma_op_function_call (func_obj_p,
-                                             this_value,
-                                             arg_values,
-                                             args_number),
-                      ret_value);
+      if (ecma_builtin_is_eval_function (func_obj_p))
+      {
+        // Call to eval
 
-      ret_value = set_variable_value (int_data, lit_oc,
-                                      lhs_var_idx,
-                                      call_ret_value);
+        bool is_direct_eval = false;
 
-      ECMA_FINALIZE (call_ret_value);
+        if (!is_reg_variable (int_data, func_name_lit_idx))
+        {
+          const literal_index_t lit_id = serializer_get_literal_id_by_uid (func_name_lit_idx,
+                                                                           int_data->opcodes_p,
+                                                                           lit_oc);
+          const literal lit = serializer_get_literal_by_id (lit_id);
 
+          if (lit.type == LIT_MAGIC_STR
+              && lit.data.magic_str_id == ECMA_MAGIC_STRING_EVAL)
+          {
+            is_direct_eval = true;
+          }
+        }
+
+        ecma_object_t *eval_lex_env_p = int_data->lex_env_p;
+        JERRY_ASSERT (eval_lex_env_p != NULL);
+
+        if (!is_direct_eval)
+        {
+          // Indirect call to eval
+          // Searching for lexical environment
+
+          ecma_object_t *lex_env_iter_p = eval_lex_env_p;
+
+          while (lex_env_iter_p != NULL)
+          {
+            eval_lex_env_p = lex_env_iter_p;
+
+            lex_env_iter_p = ecma_get_lex_env_outer_reference (lex_env_iter_p);
+          }
+
+          JERRY_ASSERT (eval_lex_env_p != NULL);
+        }
+
+        if (args_number == 0
+            || !ecma_is_value_string (arg_values[0]))
+        {
+          // 15.1.2.1, paragraph 1
+          ecma_value_t ret = (args_number == 0 ? ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED) : arg_values[0]);
+          ret_value = set_variable_value (int_data, lit_oc, lhs_var_idx, ret);
+        }
+        else
+        {
+          ECMA_TRY_CATCH (eval_ret_value,
+                          ecma_op_eval (ecma_get_string_from_value (arg_values[0]),
+                                        is_direct_eval,
+                                        int_data->is_strict),
+                          ret_value);
+
+          ret_value = set_variable_value (int_data, lit_oc,
+                                          lhs_var_idx,
+                                          eval_ret_value);
+
+          ECMA_FINALIZE (eval_ret_value);
+        }
+      }
+      else
+      {
+        ECMA_TRY_CATCH (call_ret_value,
+                        ecma_op_function_call (func_obj_p,
+                                               this_value,
+                                               arg_values,
+                                               args_number),
+                        ret_value);
+
+        ret_value = set_variable_value (int_data, lit_oc,
+                                        lhs_var_idx,
+                                        call_ret_value);
+
+        ECMA_FINALIZE (call_ret_value);
+      }
     }
 
     ecma_free_completion_value (get_this_completion_value);
@@ -918,7 +992,7 @@ opfunc_obj_decl (opcode_t opdata, /**< operation data */
     {
       JERRY_ASSERT (ecma_is_completion_value_empty (evaluate_prop_completion));
 
-      opcode_t next_opcode = vm_get_opcode (int_data->pos);
+      opcode_t next_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
       JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
 
       const opcode_meta_type type = (opcode_meta_type) next_opcode.data.meta.type;
@@ -1327,7 +1401,7 @@ opfunc_with (opcode_t opdata, /**< operation data */
   {
     JERRY_ASSERT (ecma_is_completion_value_empty (evaluation_completion));
 
-    opcode_t meta_opcode = vm_get_opcode (int_data->pos);
+    opcode_t meta_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
     JERRY_ASSERT (meta_opcode.op_idx == __op__idx_meta);
     JERRY_ASSERT (meta_opcode.data.meta.type == OPCODE_META_TYPE_END_WITH);
 
@@ -1405,7 +1479,7 @@ evaluate_arg_for_typeof (int_data_t *int_data, /**< interpreter context */
   }
   else
   {
-    const literal_index_t lit_id = serializer_get_literal_id_by_uid (var_idx, int_data->pos);
+    const literal_index_t lit_id = serializer_get_literal_id_by_uid (var_idx, int_data->opcodes_p, int_data->pos);
     JERRY_ASSERT (lit_id != INVALID_LITERAL);
 
     ecma_string_t *var_name_string_p = ecma_new_ecma_string_from_lit_index (lit_id);
@@ -1521,7 +1595,7 @@ opfunc_delete_var (opcode_t opdata, /**< operation data */
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  const literal_index_t lit_id = serializer_get_literal_id_by_uid (name_lit_idx, lit_oc);
+  const literal_index_t lit_id = serializer_get_literal_id_by_uid (name_lit_idx, int_data->opcodes_p, lit_oc);
   JERRY_ASSERT (lit_id != INVALID_LITERAL);
 
   ecma_string_t *name_string_p = ecma_new_ecma_string_from_lit_index (lit_id);
@@ -1706,7 +1780,7 @@ opcode_counter_t
 read_meta_opcode_counter (opcode_meta_type expected_type, /**< expected type of meta opcode */
                           int_data_t *int_data) /**< interpreter context */
 {
-  opcode_t meta_opcode = vm_get_opcode (int_data->pos);
+  opcode_t meta_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
   JERRY_ASSERT (meta_opcode.data.meta.type == expected_type);
 
   const idx_t data_1 = meta_opcode.data.meta.data_1;

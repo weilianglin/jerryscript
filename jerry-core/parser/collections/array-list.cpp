@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,19 @@ array_list_init (uint8_t element_size)
   header->element_size = element_size;
   header->len = 0;
   header->size = size;
+  return (array_list) header;
+}
+
+array_list
+array_list_init_from_raw (size_t element_size, void *data, size_t data_size)
+{
+  size_t size = mem_heap_recommend_allocation_size (sizeof (array_list_header) + data_size);
+  array_list_header *header = (array_list_header *) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_SHORT_TERM);
+  memset (header, 0, size);
+  header->element_size = (uint8_t) element_size;
+  header->len = data_size / element_size;
+  header->size = size;
+  memcpy ((uint8_t *) header + sizeof (array_list_header), data, data_size);
   return (array_list) header;
 }
 

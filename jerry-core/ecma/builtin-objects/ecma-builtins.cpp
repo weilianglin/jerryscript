@@ -44,6 +44,34 @@ static void ecma_instantiate_builtin (ecma_builtin_id_t id);
  */
 static ecma_object_t* ecma_builtin_objects[ECMA_BUILTIN_ID__COUNT];
 
+static void
+ecma_builtin_decode_built_in_routine_id (uint32_t encoded_id, /**< value, stored in
+                                                                   ECMA_INTERNAL_PROPERTY_BUILT_IN_ROUTINE_ID internal
+                                                                   property */
+                                         ecma_builtin_id_t *out_id_p, /**< out: identifier of built-in object,
+                                                                       *        initially containing the routine */
+                                         uint16_t *out_routine_id_p) /**< out: built-in object wide identifier of
+                                                                      * the routine */
+{
+  JERRY_ASSERT (out_id_p != NULL
+                && out_routine_id_p != NULL);
+
+  uint64_t built_in_id_field = jrt_extract_bit_field (encoded_id,
+                                                      ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_OBJECT_ID_POS,
+                                                      ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_OBJECT_ID_WIDTH);
+  JERRY_ASSERT (built_in_id_field < ECMA_BUILTIN_ID__COUNT);
+
+  uint64_t routine_id_field = jrt_extract_bit_field (encoded_id,
+                                                     ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_ROUTINE_ID_POS,
+                                                     ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_ROUTINE_ID_WIDTH);
+  JERRY_ASSERT ((uint16_t) routine_id_field == routine_id_field);
+
+  ecma_builtin_id_t builtin_id = (ecma_builtin_id_t) built_in_id_field;
+
+  *out_id_p = builtin_id;
+  *out_routine_id_p = (uint16_t) routine_id_field;
+} /* ecma_builtin_decode_built_in_routine_id */
+
 /**
  * Check if passed object is the instance of specified built-in.
  */
@@ -65,6 +93,32 @@ ecma_builtin_is (ecma_object_t *obj_p, /**< pointer to an object */
     return (obj_p == ecma_builtin_objects[builtin_id]);
   }
 } /* ecma_builtin_is */
+
+/**
+ * Check if passed object is the instance of specified built-in routine.
+ */
+bool
+ecma_builtin_is_eval_function (ecma_object_t *obj_p) /**< pointer to an object */
+{
+  JERRY_ASSERT (obj_p != NULL && !ecma_is_lexical_environment (obj_p));
+
+  if (!ecma_get_object_is_builtin (obj_p)
+      || ecma_get_object_type (obj_p) != ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION)
+  {
+    return false;
+  }
+
+  ecma_property_t *id_prop_p = ecma_get_internal_property (obj_p,
+                                                           ECMA_INTERNAL_PROPERTY_BUILT_IN_ROUTINE_ID);
+  ecma_builtin_id_t builtin_id;
+  uint16_t routine_id;
+
+  ecma_builtin_decode_built_in_routine_id (id_prop_p->u.internal_property.value,
+                                           &builtin_id, &routine_id);
+
+  return (builtin_id == ECMA_BUILTIN_ID_GLOBAL
+          && routine_id == ECMA_MAGIC_STRING_EVAL);
+} /* ecma_builtin_is_eval_function */
 
 /**
  * Get reference to specified built-in object
@@ -101,12 +155,6 @@ ecma_builtin_init_object (ecma_builtin_id_t obj_builtin_id, /**< built-in ID */
                           bool is_extensible) /**< value of object's [[Extensible]] property */
 {
   ecma_object_t *object_obj_p = ecma_create_object (prototype_obj_p, is_extensible, obj_type);
-
-  /*
-   * [[Class]] property of built-in object is not stored explicitly.
-   *
-   * See also: ecma_object_get_class_name
-   */
 
   ecma_property_t *built_in_id_prop_p = ecma_create_internal_property (object_obj_p,
                                                                        ECMA_INTERNAL_PROPERTY_BUILT_IN_ID);
@@ -215,10 +263,10 @@ ecma_instantiate_builtin (ecma_builtin_id_t id) /**< built-in id */
         JERRY_ASSERT (prototype_obj_p != NULL); \
       } \
       \
-      ecma_object_t *builtin_obj_p = ecma_builtin_init_object (builtin_id, \
-                                                               prototype_obj_p, \
-                                                               object_type, \
-                                                               is_extensible); \
+      ecma_object_t *builtin_obj_p =  ecma_builtin_init_object (builtin_id, \
+                                                                prototype_obj_p, \
+                                                                object_type, \
+                                                                is_extensible); \
       ecma_builtin_objects[builtin_id] = builtin_obj_p; \
       \
       break; \
@@ -378,22 +426,13 @@ ecma_builtin_dispatch_call (ecma_object_t *obj_p, /**< built-in object */
   {
     ecma_property_t *id_prop_p = ecma_get_internal_property (obj_p,
                                                              ECMA_INTERNAL_PROPERTY_BUILT_IN_ROUTINE_ID);
-    uint64_t packed_built_in_and_routine_id = id_prop_p->u.internal_property.value;
+    ecma_builtin_id_t builtin_id;
+    uint16_t routine_id;
 
-    uint64_t built_in_id_field = jrt_extract_bit_field (packed_built_in_and_routine_id,
-                                                        ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_OBJECT_ID_POS,
-                                                        ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_OBJECT_ID_WIDTH);
-    JERRY_ASSERT (built_in_id_field < ECMA_BUILTIN_ID__COUNT);
+    ecma_builtin_decode_built_in_routine_id (id_prop_p->u.internal_property.value,
+                                             &builtin_id, &routine_id);
 
-    uint64_t routine_id_field = jrt_extract_bit_field (packed_built_in_and_routine_id,
-                                                       ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_ROUTINE_ID_POS,
-                                                       ECMA_BUILTIN_ROUTINE_ID_BUILT_IN_ROUTINE_ID_WIDTH);
-    JERRY_ASSERT ((uint16_t) routine_id_field == routine_id_field);
-
-    ecma_builtin_id_t built_in_id = (ecma_builtin_id_t) built_in_id_field;
-    uint16_t routine_id = (uint16_t) routine_id_field;
-
-    return ecma_builtin_dispatch_routine (built_in_id,
+    return ecma_builtin_dispatch_routine (builtin_id,
                                           routine_id,
                                           this_arg_value,
                                           arguments_list_p,

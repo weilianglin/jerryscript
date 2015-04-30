@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,4 +55,8 @@ ecma_builtin_is (ecma_object_t *obj_p,
                  ecma_builtin_id_t builtin_id);
 extern ecma_object_t*
 ecma_builtin_get (ecma_builtin_id_t builtin_id);
+
+extern bool
+ecma_builtin_is_eval_function (ecma_object_t *obj_p);
+
 #endif /* !ECMA_BUILTINS_H */

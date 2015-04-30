@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -718,6 +718,16 @@ literal_operand (literal_index_t lit_id)
 
   ret.type = OPERAND_LITERAL;
   ret.data.lit_id = lit_id;
+
+  return ret;
+}
+
+operand eval_ret_operand (void)
+{
+  operand ret;
+
+  ret.type = OPERAND_TMP;
+  ret.data.uid = EVAL_RET_VALUE;
 
   return ret;
 }

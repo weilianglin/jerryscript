@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ typedef uint8_t* array_list;
 #define null_list NULL
 
 array_list array_list_init (uint8_t);
+array_list array_list_init_from_raw (size_t element_size, void *data, size_t data_size);
 void array_list_free (array_list);
 array_list array_list_append (array_list, void *);
 void array_list_drop_last (array_list);

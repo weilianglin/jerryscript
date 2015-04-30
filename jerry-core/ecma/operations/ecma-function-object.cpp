@@ -26,6 +26,7 @@
 #include "ecma-objects-arguments.h"
 #include "ecma-try-catch-macro.h"
 #include "jrt.h"
+#include "jrt-bit-fields.h"
 
 #define JERRY_INTERNAL
 #include "jerry-internal.h"
@@ -47,9 +48,9 @@ static uint32_t
 ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
                                         bool do_instantiate_args_obj, /**< should an Arguments object be
                                                                        *   instantiated for the code */
-                                        opcode_counter_t opcode_idx) /**< index of first opcode */
+                                        opcode_counter_t opcode_index) /**< index of first opcode */
 {
-  uint32_t value = opcode_idx;
+  uint32_t value = opcode_index;
   const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
   const uint32_t do_instantiate_arguments_object_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 2);
 
@@ -159,7 +160,8 @@ ecma_op_create_function_object (ecma_string_t* formal_parameter_list_p[], /**< f
                                 bool is_strict, /**< 'strict' flag */
                                 bool do_instantiate_arguments_object, /**< should an Arguments object be instantiated
                                                                        *   for the function object upon call */
-                                opcode_counter_t first_opcode_idx) /**< index of first opcode of function's body */
+                                const opcode_t *opcodes_p,
+                                opcode_counter_t first_opcode_index)
 {
   // 1., 4., 13.
   ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
@@ -201,10 +203,13 @@ ecma_op_create_function_object (ecma_string_t* formal_parameter_list_p[], /**< f
   }
 
   // 12.
+  ecma_property_t *opcodes_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_OPCODES);
+  MEM_CP_SET_NON_NULL_POINTER (opcodes_prop_p->u.internal_property.value, opcodes_p);
+
   ecma_property_t *code_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE);
   code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict,
                                                                                    do_instantiate_arguments_object,
-                                                                                   first_opcode_idx);
+                                                                                   first_opcode_index);
 
   // 14.
   ecma_number_t* len_p = ecma_alloc_number ();
@@ -614,18 +619,21 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
     {
       /* Entering Function Code (ECMA-262 v5, 10.4.3) */
       ecma_property_t *scope_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_SCOPE);
+      ecma_property_t *opcodes_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_OPCODES);
       ecma_property_t *code_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_CODE);
 
       ecma_object_t *scope_p = ECMA_GET_NON_NULL_POINTER (ecma_object_t,
                                                           scope_prop_p->u.internal_property.value);
       uint32_t code_prop_value = code_prop_p->u.internal_property.value;
 
+      // 8.
       bool is_strict;
       bool do_instantiate_args_obj;
-      // 8.
-      opcode_counter_t code_first_opcode_idx = ecma_unpack_code_internal_property_value (code_prop_value,
-                                                                                         &is_strict,
-                                                                                         &do_instantiate_args_obj);
+
+      const opcode_t *opcodes_p = MEM_CP_GET_POINTER (const opcode_t, opcodes_prop_p->u.internal_property.value);
+      opcode_counter_t first_opcode_index = ecma_unpack_code_internal_property_value (code_prop_value,
+                                                                                      &is_strict,
+                                                                                      &do_instantiate_args_obj);
 
       ecma_value_t this_binding;
       // 1.
@@ -661,7 +669,8 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                                                                do_instantiate_args_obj),
                       ret_value);
 
-      ecma_completion_value_t completion = vm_run_from_pos (code_first_opcode_idx,
+      ecma_completion_value_t completion = vm_run_from_pos (opcodes_p,
+                                                            first_opcode_index,
                                                             this_binding,
                                                             local_env_p,
                                                             is_strict,
@@ -852,7 +861,8 @@ ecma_op_function_construct (ecma_object_t *func_obj_p, /**< Function object */
 ecma_completion_value_t
 ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment */
                               ecma_string_t *function_name_p, /**< function name */
-                              opcode_counter_t function_code_opcode_idx, /**< index of first opcode of function code */
+                              const opcode_t *opcodes_p,
+                              opcode_counter_t function_code_opcode_index, /**< index of function's first opcode */
                               ecma_string_t* formal_parameter_list_p[], /**< formal parameters list */
                               ecma_length_t formal_parameter_list_length, /**< length of formal parameters list */
                               bool is_strict, /**< flag indicating if function is declared in strict mode code */
@@ -868,7 +878,8 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
                                                               lex_env_p,
                                                               is_strict,
                                                               do_instantiate_arguments_object,
-                                                              function_code_opcode_idx);
+                                                              opcodes_p,
+                                                              function_code_opcode_index);
 
   // c.
   bool func_already_declared = ecma_op_has_binding (lex_env_p, function_name_p);

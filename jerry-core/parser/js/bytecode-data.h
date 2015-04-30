@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,21 @@
 
 typedef struct
 {
+  lit_id_hash_table *lit_id_hash;
+} opcodes_header_t;
+
+typedef struct
+{
   const ecma_char_t *strings_buffer;
   const literal *literals;
   const opcode_t *opcodes;
-  lit_id_hash_table *lit_id_hash;
   literal_index_t literals_count;
   opcode_counter_t opcodes_count;
 } bytecode_data_t;
+
+#define GET_HASH_TABLE_FOR_BYTECODE(opcodes) (((opcodes_header_t *) (((uint8_t *) (opcodes)) - \
+                                                                     sizeof (opcodes_header_t)))->lit_id_hash)
+
+#define GET_BYTECODE_HEADER(opcodes) ((opcodes_header_t *) (((uint8_t *) (opcodes)) - sizeof (opcodes_header_t)))
 
 #endif // BYTECODE_DATA_H

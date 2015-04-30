@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,12 @@ static bool allow_dump_lines = false, strict_mode;
 static size_t buffer_size = 0;
 
 /* Represents the contents of a script.  */
-static const char *buffer_start = NULL;
-static const char *buffer = NULL;
+static const char *buffer_start = nullptr;
+static const char *buffer = nullptr;
 static const char *token_start;
-static ecma_char_t *strings_cache;
-static size_t strings_cache_size;
-static size_t strings_cache_used_size;
+static ecma_char_t *strings_cache = nullptr;
+static size_t strings_cache_size = 0;
+static size_t strings_cache_used_size = 0;
 
 #define LA(I)       (get_char (I))
 
@@ -43,6 +43,8 @@ enum
   literals_global_size
 };
 STATIC_STACK (literals, literal)
+literal *literals_data = nullptr;
+size_t literals_count = 0;
 
 static bool
 is_empty (token tok)
@@ -371,12 +373,16 @@ convert_seen_num_to_token (ecma_number_t num)
 const literal *
 lexer_get_literals (void)
 {
-  literal *data = NULL;
-  if (STACK_SIZE (literals) > 0)
+  if (STACK_SIZE (literals) > 0 && STACK_SIZE (literals) > literals_count)
   {
-    STACK_CONVERT_TO_RAW_DATA (literals, data);
+    if (literals_data)
+    {
+      mem_heap_free_block (literals_data);
+    }
+    literals_count = STACK_SIZE (literals);
+    STACK_CONVERT_TO_RAW_DATA (literals, literals_data);
   }
-  return data;
+  return literals_data;
 }
 
 literal_index_t
@@ -413,7 +419,7 @@ lexer_get_strings_cache (void)
 }
 
 void
-lexer_add_keyword_or_numeric_literal_if_not_present (literal lit)
+lexer_add_literal_if_not_present (literal lit)
 {
   for (literal_index_t i = 0; i < STACK_SIZE (literals); i++)
   {
@@ -1597,7 +1603,7 @@ lexer_set_strict_mode (bool is_strict)
 }
 
 void
-lexer_init (const char *source, size_t source_size, bool show_opcodes)
+lexer_init_source (const char *source, size_t source_size)
 {
   empty_token.type = TOK_EMPTY;
   empty_token.uid = 0;
@@ -1605,6 +1611,14 @@ lexer_init (const char *source, size_t source_size, bool show_opcodes)
 
   saved_token = prev_token = sent_token = empty_token;
 
+  buffer_size = source_size;
+  lexer_set_source (source);
+  lexer_set_strict_mode (false);
+}
+
+void
+lexer_init (bool show_opcodes)
+{
 #ifndef JERRY_NDEBUG
   allow_dump_lines = show_opcodes;
 #else /* JERRY_NDEBUG */
@@ -1612,13 +1626,14 @@ lexer_init (const char *source, size_t source_size, bool show_opcodes)
   allow_dump_lines = false;
 #endif /* JERRY_NDEBUG */
 
-  buffer_size = source_size;
-  lexer_set_source (source);
-  strings_cache = NULL;
-  strings_cache_used_size = strings_cache_size = 0;
-  lexer_set_strict_mode (false);
-
-  STACK_INIT (literals);
+  if (literals_count)
+  {
+    STACK_INIT_FROM_RAW (literals, literals_data, literals_count * sizeof (literal));
+  }
+  else
+  {
+    STACK_INIT (literals);
+  }
 }
 
 void
