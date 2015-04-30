@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,15 @@
 void init_int (const opcode_t* program_p, bool dump_mem_stats);
 jerry_completion_code_t run_int (void);
 ecma_completion_value_t run_int_loop (int_data_t *int_data);
-ecma_completion_value_t run_int_from_pos (opcode_counter_t start_pos,
+ecma_completion_value_t run_int_from_pos (const opcode_t *opcodes_p,
+                                          opcode_counter_t start_pos,
                                           ecma_value_t this_binding_value,
                                           ecma_object_t *lex_env_p,
                                           bool is_strict,
                                           bool is_eval_code);
 
-opcode_t read_opcode (opcode_counter_t counter);
+opcode_t read_opcode (const opcode_t* opcodes_p,
+                      opcode_counter_t counter);
 
 extern ecma_value_t vm_get_this_binding (void);
 extern ecma_object_t* vm_get_lex_env (void);

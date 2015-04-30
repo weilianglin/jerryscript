@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ fill_varg_list (int_data_t *int_data, /**< interpreter context */
 
     if (ecma_is_completion_value_normal (evaluate_arg_completion))
     {
-      opcode_t next_opcode = read_opcode (int_data->pos);
+      opcode_t next_opcode = read_opcode (int_data->opcodes_p, int_data->pos);
       JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
       JERRY_ASSERT (next_opcode.data.meta.type == OPCODE_META_TYPE_VARG);
 
@@ -92,12 +92,12 @@ fill_params_list (int_data_t *int_data, /**< interpreter context */
        param_index < params_number;
        param_index++)
   {
-    opcode_t next_opcode = read_opcode (int_data->pos);
+    opcode_t next_opcode = read_opcode (int_data->opcodes_p, int_data->pos);
     JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
     JERRY_ASSERT (next_opcode.data.meta.type == OPCODE_META_TYPE_VARG);
 
     const literal_index_t param_name_lit_idx = serializer_get_literal_id_by_uid (next_opcode.data.meta.data_1,
-                                                                                 int_data->pos);
+                                                                                 int_data->opcodes_p, int_data->pos);
 
     params_names[param_index] = ecma_new_ecma_string_from_lit_index (param_name_lit_idx);
 

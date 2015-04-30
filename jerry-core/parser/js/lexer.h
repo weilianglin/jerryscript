@@ -19,6 +19,7 @@
 #include "literal.h"
 
 #define INVALID_VALUE 255
+#define EVAL_RET_VALUE 128
 #define INVALID_LITERAL ((uint32_t) -1)
 
 /* Keywords.  */
@@ -163,7 +164,8 @@ typedef struct
   literal_index_t uid;
 } token;
 
-void lexer_init (const char *, size_t, bool);
+void lexer_init (bool);
+void lexer_init_source (const char *, size_t);
 void lexer_free (void);
 
 token lexer_next_token (void);
@@ -172,7 +174,7 @@ token lexer_prev_token (void);
 
 const literal *lexer_get_literals (void);
 const ecma_char_t *lexer_get_strings_cache (void);
-void lexer_add_keyword_or_numeric_literal_if_not_present (literal);
+void lexer_add_literal_if_not_present (literal);
 literal_index_t lexer_get_literals_count (void);
 literal lexer_get_literal_by_id (literal_index_t);
 literal_index_t lexer_lookup_literal_uid (literal lit);

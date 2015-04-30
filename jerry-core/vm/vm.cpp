@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -214,7 +214,8 @@ interp_mem_stats_context_exit (int_data_t *int_data_p,
 }
 
 static void
-interp_mem_stats_opcode_enter (opcode_counter_t opcode_position,
+interp_mem_stats_opcode_enter (const opcode_t *opcodes_p,
+                               opcode_counter_t opcode_position,
                                mem_heap_stats_t *out_heap_stats_p,
                                mem_pools_stats_t *out_pools_stats_p)
 {
@@ -235,7 +236,7 @@ interp_mem_stats_opcode_enter (opcode_counter_t opcode_position,
                         out_pools_stats_p,
                         true, false);
 
-  opcode_t opcode = read_opcode (opcode_position);
+  opcode_t opcode = read_opcode (opcodes_p, opcode_position);
 
   printf ("%s-- Opcode: %s (position %u) --\n",
           indent_prefix, __op_names[opcode.op_idx], (uint32_t) opcode_position);
@@ -280,7 +281,7 @@ interp_mem_stats_opcode_exit (int_data_t *int_data_p,
   int_data_p->context_peak_allocated_pool_chunks = JERRY_MAX (int_data_p->context_peak_allocated_pool_chunks,
                                                               pools_stats_after.allocated_chunks);
 
-  opcode_t opcode = read_opcode (opcode_position);
+  opcode_t opcode = read_opcode (int_data_p->opcodes_p, opcode_position);
 
   printf ("%s Allocated heap bytes:  %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
@@ -363,7 +364,7 @@ run_int (void)
   bool is_strict = false;
   opcode_counter_t start_pos = 0;
 
-  opcode_t first_opcode = read_opcode (start_pos);
+  opcode_t first_opcode = read_opcode (__program, start_pos);
   if (first_opcode.op_idx == __op__idx_meta
       && first_opcode.data.meta.type == OPCODE_META_TYPE_STRICT_CODE)
   {
@@ -374,7 +375,8 @@ run_int (void)
   ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL);
   ecma_object_t *lex_env_p = ecma_get_global_environment ();
 
-  ecma_completion_value_t completion = run_int_from_pos (start_pos,
+  ecma_completion_value_t completion = run_int_from_pos (__program,
+                                                         start_pos,
                                                          ecma_make_object_value (glob_obj_p),
                                                          lex_env_p,
                                                          is_strict,
@@ -427,12 +429,12 @@ run_int_loop (int_data_t *int_data)
   {
     do
     {
-      const opcode_t *curr = &__program[int_data->pos];
+      const opcode_t *curr = &int_data->opcodes_p[int_data->pos];
 
 #ifdef MEM_STATS
       const opcode_counter_t opcode_pos = int_data->pos;
 
-      interp_mem_stats_opcode_enter (opcode_pos,
+      interp_mem_stats_opcode_enter (int_data->opcodes_p, opcode_pos,
                                      &heap_stats_before,
                                      &pools_stats_before);
 #endif /* MEM_STATS */
@@ -473,7 +475,8 @@ run_int_loop (int_data_t *int_data)
 }
 
 ecma_completion_value_t
-run_int_from_pos (opcode_counter_t start_pos,
+run_int_from_pos (const opcode_t *opcodes_p,
+                  opcode_counter_t start_pos,
                   ecma_value_t this_binding_value,
                   ecma_object_t *lex_env_p,
                   bool is_strict,
@@ -481,7 +484,7 @@ run_int_from_pos (opcode_counter_t start_pos,
 {
   ecma_completion_value_t completion;
 
-  const opcode_t *curr = &__program[start_pos];
+  const opcode_t *curr = &opcodes_p[start_pos];
   JERRY_ASSERT (curr->op_idx == __op__idx_reg_var_decl);
 
   const idx_t min_reg_num = curr->data.reg_var_decl.min;
@@ -493,6 +496,7 @@ run_int_from_pos (opcode_counter_t start_pos,
   MEM_DEFINE_LOCAL_ARRAY (regs, regs_num, ecma_value_t);
 
   int_data_t int_data;
+  int_data.opcodes_p = opcodes_p;
   int_data.pos = (opcode_counter_t) (start_pos + 1);
   int_data.this_binding = this_binding_value;
   int_data.lex_env_p = lex_env_p;
@@ -536,9 +540,10 @@ run_int_from_pos (opcode_counter_t start_pos,
  * Get specified opcode from the program.
  */
 opcode_t
-read_opcode (opcode_counter_t counter) /**< opcode counter */
+read_opcode (const opcode_t* opcodes_p,
+             opcode_counter_t counter) /**< opcode counter */
 {
-  return __program[ counter ];
+  return opcodes_p[ counter ];
 } /* read_opcode */
 
 /**

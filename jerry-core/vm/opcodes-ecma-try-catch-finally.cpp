@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
                 || (ecma_is_completion_value_empty (try_completion) && int_data->pos == try_end_oc));
   int_data->pos = try_end_oc;
 
-  opcode_t next_opcode = read_opcode (int_data->pos);
+  opcode_t next_opcode = read_opcode (int_data->opcodes_p, int_data->pos);
   JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
 
   if (ecma_is_completion_value_exit (try_completion))
@@ -58,13 +58,13 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
 
     if (ecma_is_completion_value_throw (try_completion))
     {
-      next_opcode = read_opcode (int_data->pos);
+      next_opcode = read_opcode (int_data->opcodes_p, int_data->pos);
       JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
       JERRY_ASSERT (next_opcode.data.meta.type == OPCODE_META_TYPE_CATCH_EXCEPTION_IDENTIFIER);
 
       const literal_index_t catch_exc_val_var_name_lit_idx = serializer_get_literal_id_by_uid (
           next_opcode.data.meta.data_1,
-          int_data->pos);
+          int_data->opcodes_p, int_data->pos);
       int_data->pos++;
 
       ecma_string_t *catch_exc_var_name_str_p = ecma_new_ecma_string_from_lit_index (catch_exc_val_var_name_lit_idx);
@@ -100,7 +100,7 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
     int_data->pos = catch_end_oc;
   }
 
-  next_opcode = read_opcode (int_data->pos);
+  next_opcode = read_opcode (int_data->opcodes_p, int_data->pos);
   JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
 
   if (ecma_is_completion_value_exit (try_completion))
@@ -126,7 +126,7 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
     }
   }
 
-  next_opcode = read_opcode (int_data->pos++);
+  next_opcode = read_opcode (int_data->opcodes_p, int_data->pos++);
   JERRY_ASSERT (next_opcode.op_idx == __op__idx_meta);
   JERRY_ASSERT (next_opcode.data.meta.type == OPCODE_META_TYPE_END_TRY_CATCH_FINALLY);
 

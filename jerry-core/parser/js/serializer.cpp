@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@
 #include "jrt.h"
 #include "parser.h"
 #include "jrt-libc-includes.h"
+#include "parser/collections/array-list.h"
 #include "pretty-printer.h"
 
 static bytecode_data_t bytecode_data;
 static scopes_tree current_scope;
-
+static array_list bytecodes_cache;
 static bool print_opcodes;
 
 op_meta
@@ -52,13 +53,14 @@ serializer_get_literal_by_id (literal_index_t id)
 }
 
 literal_index_t
-serializer_get_literal_id_by_uid (uint8_t id, opcode_counter_t oc)
+serializer_get_literal_id_by_uid (uint8_t id, const opcode_t *opcodes_p, opcode_counter_t oc)
 {
-  if (bytecode_data.lit_id_hash == null_hash)
+  lit_id_hash_table *lit_id_hash = GET_HASH_TABLE_FOR_BYTECODE (opcodes_p == NULL ? bytecode_data.opcodes : opcodes_p);
+  if (lit_id_hash == null_hash)
   {
     return INVALID_LITERAL;
   }
-  return lit_id_hash_table_lookup (bytecode_data.lit_id_hash, id, oc);
+  return lit_id_hash_table_lookup (lit_id_hash, id, oc);
 }
 
 const void *
@@ -83,11 +85,11 @@ serializer_set_scope (scopes_tree new_scope)
 void
 serializer_merge_scopes_into_bytecode (void)
 {
-  JERRY_ASSERT (bytecode_data.lit_id_hash == null_hash);
   bytecode_data.opcodes_count = scopes_tree_count_opcodes (current_scope);
-  bytecode_data.lit_id_hash = lit_id_hash_table_init (scopes_tree_count_literals_in_blocks (current_scope),
-                                                      bytecode_data.opcodes_count);
-  bytecode_data.opcodes = scopes_tree_raw_data (current_scope, bytecode_data.lit_id_hash);
+  lit_id_hash_table *lit_id_hash = lit_id_hash_table_init (scopes_tree_count_literals_in_blocks (current_scope),
+                                                      (size_t) bytecode_data.opcodes_count / BLOCK_SIZE + 1);
+  bytecode_data.opcodes = scopes_tree_raw_data (current_scope, lit_id_hash);
+  bytecodes_cache = array_list_append (bytecodes_cache, &bytecode_data.opcodes);
 }
 
 void
@@ -187,7 +189,8 @@ serializer_init ()
   bytecode_data.strings_buffer = NULL;
   bytecode_data.literals = NULL;
   bytecode_data.opcodes = NULL;
-  bytecode_data.lit_id_hash = null_hash;
+
+  bytecodes_cache = array_list_init (sizeof (opcode_t *));
 }
 
 void serializer_set_show_opcodes (bool show_opcodes)
@@ -202,13 +205,15 @@ serializer_free (void)
   {
     mem_heap_free_block ((uint8_t *) bytecode_data.strings_buffer);
   }
-  if (bytecode_data.lit_id_hash != null_hash)
-  {
-    lit_id_hash_table_free (bytecode_data.lit_id_hash);
-  }
   if (bytecode_data.literals != NULL)
   {
     mem_heap_free_block ((uint8_t *) bytecode_data.literals);
   }
-  mem_heap_free_block ((uint8_t *) bytecode_data.opcodes);
+
+  for (size_t i = 0; i < array_list_len (bytecodes_cache); ++i)
+  {
+    lit_id_hash_table_free (GET_BYTECODE_HEADER (*(opcode_t **) array_list_element (bytecodes_cache, i))->lit_id_hash);
+    mem_heap_free_block (GET_BYTECODE_HEADER (*(opcode_t **) array_list_element (bytecodes_cache, i)));
+  }
+  array_list_free (bytecodes_cache);
 }

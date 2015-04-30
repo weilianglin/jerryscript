@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "ecma-objects-general.h"
 #include "ecma-try-catch-macro.h"
 #include "jrt.h"
+#include "jrt-bit-fields.h"
 
 #define JERRY_INTERNAL
 #include "jerry-internal.h"
@@ -37,48 +38,84 @@
  */
 
 /**
- * Pack 'is_strict' flag and opcode index to value
- * that can be stored in an [[Code]] internal property.
+ * Pack 'is_strict' flag, opcodes pointer and index of first opcode
+ * to value that can be stored in an [[Code]] internal property.
  *
  * @return packed value
  */
 static uint32_t
 ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
-                                        opcode_counter_t opcode_idx) /**< index of first opcode */
+                                        const opcode_t* opcodes_p,
+                                        opcode_counter_t opcode_index)
 {
-  uint32_t value = opcode_idx;
-  const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
+  const uint32_t bcode_cp_offset = 0;
+  const uint32_t bcode_cp_width = MEM_CP_WIDTH;
 
-  JERRY_ASSERT (((value) & (1u << is_strict_bit_offset)) == 0);
+  const uint32_t opcode_index_offset = bcode_cp_offset + bcode_cp_width;
+  const uint32_t opcode_index_width = MEM_CP_WIDTH;
 
-  if (is_strict)
-  {
-    value |= (1u << is_strict_bit_offset);
-  }
+  const uint32_t is_add_four_to_opcodes_pointer_offset = opcode_index_offset + opcode_index_width;
+  const uint32_t is_add_four_to_opcodes_pointer_width = 1;
 
-  return value;
+  const uint32_t is_strict_bit_offset = is_add_four_to_opcodes_pointer_offset + is_add_four_to_opcodes_pointer_width;
+  const uint32_t is_strict_bit_width = 1;
+
+  uintptr_t aligned_opcodes_p = JERRY_ALIGNDOWN ((uintptr_t) opcodes_p, 8);
+  bool is_add_four_to_opcodes_pointer = (aligned_opcodes_p != (uintptr_t) opcodes_p);
+
+  mem_cpointer_t opcodes_cp = (mem_cpointer_t) mem_compress_pointer ((void*) aligned_opcodes_p);
+
+  uint64_t value = 0;
+
+  value = jrt_set_bit_field_value (value, opcodes_cp, bcode_cp_offset, bcode_cp_width);
+  value = jrt_set_bit_field_value (value, opcode_index, opcode_index_offset, opcode_index_width);
+  value = jrt_set_bit_field_value (value, is_add_four_to_opcodes_pointer ? 1 : 0,
+                                   is_add_four_to_opcodes_pointer_offset, is_add_four_to_opcodes_pointer_width);
+  value = jrt_set_bit_field_value (value, is_strict ? 1 : 0, is_strict_bit_offset, is_strict_bit_width);
+
+  JERRY_ASSERT ((uint32_t) value == value);
+
+  return (uint32_t) value;
 } /* ecma_pack_code_internal_property_value */
 
 /**
- * Unpack 'is_strict' flag and opcode index from value
- * that can be stored in an [[Code]] internal property.
+ * Unpack 'is_strict' flag, opcodes pointer and opcode index
+ * from value that can be stored in an [[Code]] internal property.
  *
- * @return opcode index
+ * @return pointer opcodes array
  */
-static opcode_counter_t
+static const opcode_t*
 ecma_unpack_code_internal_property_value (uint32_t value, /**< packed value */
+                                          opcode_counter_t* out_opcode_index_p,
                                           bool* out_is_strict_p) /**< out: is code strict? */
 {
   JERRY_ASSERT (out_is_strict_p != NULL);
+  JERRY_ASSERT (out_opcode_index_p != NULL);
 
-  const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
+  const uint32_t bcode_cp_offset = 0;
+  const uint32_t bcode_cp_width = MEM_CP_WIDTH;
 
-  bool is_strict = ((value & (1u << is_strict_bit_offset)) != 0);
-  *out_is_strict_p = is_strict;
+  const uint32_t opcode_index_offset = bcode_cp_offset + bcode_cp_width;
+  const uint32_t opcode_index_width = MEM_CP_WIDTH;
 
-  opcode_counter_t opcode_idx = (opcode_counter_t) (value & ~(1u << is_strict_bit_offset));
+  const uint32_t is_add_four_to_opcodes_pointer_offset = opcode_index_offset + opcode_index_width;
+  const uint32_t is_add_four_to_opcodes_pointer_width = 1;
 
-  return opcode_idx;
+  const uint32_t is_strict_bit_offset = is_add_four_to_opcodes_pointer_offset + is_add_four_to_opcodes_pointer_width;
+  const uint32_t is_strict_bit_width = 1;
+
+  *out_opcode_index_p = (opcode_counter_t) jrt_extract_bit_field (value, opcode_index_offset, opcode_index_width);
+  *out_is_strict_p = (bool) jrt_extract_bit_field (value, is_strict_bit_offset, is_strict_bit_width);
+
+  uintptr_t aligned_opcodes_p = (uintptr_t) jrt_extract_bit_field (value,
+                                                                   bcode_cp_offset,
+                                                                   bcode_cp_width);
+  bool is_add_four_to_opcodes_pointer = (bool) jrt_extract_bit_field (value,
+                                                                      is_add_four_to_opcodes_pointer_offset,
+                                                                      is_add_four_to_opcodes_pointer_width);
+
+  return (const opcode_t*) ((uint8_t*) mem_decompress_pointer (aligned_opcodes_p) +
+                            (is_add_four_to_opcodes_pointer ? 4 : 0));
 } /* ecma_unpack_code_internal_property_value */
 
 /**
@@ -144,7 +181,8 @@ ecma_op_create_function_object (ecma_string_t* formal_parameter_list_p[], /**< f
                                 ecma_length_t formal_parameters_number, /**< formal parameters list's length */
                                 ecma_object_t *scope_p, /**< function's scope */
                                 bool is_strict, /**< 'strict' flag */
-                                opcode_counter_t first_opcode_idx) /**< index of first opcode of function's body */
+                                const opcode_t *opcodes_p,
+                                opcode_counter_t first_opcode_index)
 {
   // 1., 4., 13.
   ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
@@ -183,9 +221,18 @@ ecma_op_create_function_object (ecma_string_t* formal_parameter_list_p[], /**< f
   }
 
   // 12.
+  if (opcodes_p[first_opcode_index].op_idx == __op__idx_meta
+      && opcodes_p[first_opcode_index].data.meta.type == OPCODE_META_TYPE_STRICT_CODE)
+  {
+    is_strict = true;
+
+    first_opcode_index++;
+  }
+
   ecma_property_t *code_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE);
   code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict,
-                                                                                   first_opcode_idx);
+                                                                                   opcodes_p,
+                                                                                   first_opcode_index);
 
   // 14.
   ecma_number_t* len_p = ecma_alloc_number ();
@@ -542,9 +589,12 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                                                           scope_prop_p->u.internal_property.value);
       uint32_t code_prop_value = code_prop_p->u.internal_property.value;
 
-      bool is_strict;
       // 8.
-      opcode_counter_t code_first_opcode_idx = ecma_unpack_code_internal_property_value (code_prop_value, &is_strict);
+      bool is_strict;
+      opcode_counter_t first_opcode_index;
+      const opcode_t *opcodes_p = ecma_unpack_code_internal_property_value (code_prop_value,
+                                                                            &first_opcode_index,
+                                                                            &is_strict);
 
       ecma_value_t this_binding;
       // 1.
@@ -579,7 +629,8 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                                                                is_strict),
                       ret_value);
 
-      ecma_completion_value_t completion = run_int_from_pos (code_first_opcode_idx,
+      ecma_completion_value_t completion = run_int_from_pos (opcodes_p,
+                                                             first_opcode_index,
                                                              this_binding,
                                                              local_env_p,
                                                              is_strict,
@@ -764,7 +815,8 @@ ecma_op_function_construct (ecma_object_t *func_obj_p, /**< Function object */
 ecma_completion_value_t
 ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment */
                               ecma_string_t *function_name_p, /**< function name */
-                              opcode_counter_t function_code_opcode_idx, /**< index of first opcode of function code */
+                              const opcode_t *opcodes_p,
+                              opcode_counter_t function_code_opcode_index, /**< index of function's first opcode */
                               ecma_string_t* formal_parameter_list_p[], /**< formal parameters list */
                               ecma_length_t formal_parameter_list_length, /**< length of formal parameters list */
                               bool is_strict, /**< flag indicating if function is declared in strict mode code */
@@ -776,7 +828,8 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
                                                               formal_parameter_list_length,
                                                               lex_env_p,
                                                               is_strict,
-                                                              function_code_opcode_idx);
+                                                              opcodes_p,
+                                                              function_code_opcode_index);
 
   // c.
   bool func_already_declared = ecma_op_has_binding (lex_env_p, function_name_p);

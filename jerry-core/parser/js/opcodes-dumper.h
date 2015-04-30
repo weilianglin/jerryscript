@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ typedef enum __attr_packed___
 
 operand empty_operand (void);
 operand literal_operand (literal_index_t);
+operand eval_ret_operand (void);
 bool operand_is_empty (operand);
 
 void dumper_init (void);

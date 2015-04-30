@@ -20,6 +20,8 @@
 #include "ecma-globals.h"
 #include "ecma-helpers.h"
 #include "ecma-lex-env.h"
+#include "parser/js/serializer.h"
+#include "parser/js/parser.h"
 #include "vm.h"
 
 /** \addtogroup ecma ECMA
@@ -55,14 +57,29 @@ ecma_op_eval (ecma_string_t *code_p, /**< code string */
   JERRY_ASSERT (buffer_size_req == buf_size);
 
   // FIXME: Get parser feedback about syntax correctness
-  bool is_syntax_correct = true;
+  bool is_syntax_correct;
+
+  parser_init ();
+  is_syntax_correct = parser_parse_eval ((const char *) code_zt_buffer_p, (size_t) buffer_size_req);
+  const opcode_t* opcodes_p = (const opcode_t*) serializer_get_bytecode ();
+  serializer_print_opcodes ();
+  parser_free ();
+
   bool is_strict_prologue;
+  opcode_counter_t first_opcode_index = 0;
+  if (opcodes_p[first_opcode_index].op_idx == __op__idx_meta
+      && opcodes_p[first_opcode_index].data.meta.type == OPCODE_META_TYPE_STRICT_CODE)
+  {
+    is_strict_prologue = true;
 
-  // FIXME: Call parser
-  JERRY_UNIMPLEMENTED ("eval operation is not implemented");
+    first_opcode_index++;
+  }
+  else
+  {
+    is_strict_prologue = false;
+  }
 
-  // FIXME:
-  is_strict_prologue = false;
+  bool is_strict = (is_strict_prologue || (is_direct && is_called_from_strict_mode_code));
 
   if (!is_syntax_correct)
   {
@@ -85,8 +102,7 @@ ecma_op_eval (ecma_string_t *code_p, /**< code string */
       lex_env_p = ecma_get_global_environment ();
     }
 
-    if (is_strict_prologue
-        || (is_direct && is_called_from_strict_mode_code))
+    if (is_strict)
     {
       ecma_object_t *strict_lex_env_p = ecma_create_decl_lex_env (lex_env_p);
       ecma_deref_object (lex_env_p);
@@ -94,9 +110,12 @@ ecma_op_eval (ecma_string_t *code_p, /**< code string */
       lex_env_p = strict_lex_env_p;
     }
 
-    // FIXME: Call interpreter
-    completion = ecma_make_return_completion_value (ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED));
-    JERRY_UNIMPLEMENTED ("eval operation is not implemented");
+    completion = run_int_from_pos (opcodes_p,
+                                   first_opcode_index,
+                                   this_binding,
+                                   lex_env_p,
+                                   is_strict,
+                                   true);
 
     if (ecma_is_completion_value_return (completion))
     {
@@ -112,6 +131,7 @@ ecma_op_eval (ecma_string_t *code_p, /**< code string */
     ecma_free_value (this_binding, true);
   }
 
+  // FIXME: Free byte-code
 
   MEM_FINALIZE_LOCAL_ARRAY (code_zt_buffer_p);
 

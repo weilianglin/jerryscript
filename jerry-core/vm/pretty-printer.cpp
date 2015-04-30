@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ var_to_str (opcode_t opcode, literal_index_t lit_ids[], opcode_counter_t oc, uin
   }
   else
   {
-    return lit_id_to_str (serializer_get_literal_id_by_uid (raw.uids[current_arg], oc));
+    return lit_id_to_str (serializer_get_literal_id_by_uid (raw.uids[current_arg], NULL, oc));
   }
 }
 

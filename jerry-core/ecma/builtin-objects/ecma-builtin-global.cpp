@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,12 @@ static ecma_completion_value_t
 ecma_builtin_global_object_eval (ecma_value_t this_arg, /**< this argument */
                                  ecma_value_t x) /**< routine's first argument */
 {
-  ECMA_BUILTIN_CP_UNIMPLEMENTED (this_arg, x);
+  /* call to eval is special case that is catched and processed in call_n opcode handler */
+
+  (void) this_arg;
+  (void) x;
+
+  JERRY_UNREACHABLE ();
 } /* ecma_builtin_global_object_eval */
 
 /**

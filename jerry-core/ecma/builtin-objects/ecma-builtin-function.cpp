@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,11 @@
 #include "ecma-helpers.h"
 #include "ecma-objects.h"
 #include "ecma-function-object.h"
+#include "ecma-lex-env.h"
 #include "ecma-try-catch-macro.h"
 #include "jrt.h"
+#include "parser/js/serializer.h"
+#include "parser/js/parser.h"
 
 #define ECMA_BUILTINS_INTERNAL
 #include "ecma-builtins-internal.h"
@@ -67,7 +70,107 @@ ecma_builtin_function_dispatch_construct (const ecma_value_t *arguments_list_p, 
 {
   JERRY_ASSERT (arguments_list_len == 0 || arguments_list_p != NULL);
 
-  ECMA_BUILTIN_CP_UNIMPLEMENTED (arguments_list_p, arguments_list_len);
+  ecma_completion_value_t completion = ECMA_COMPLETION_TYPE_NORMAL;
+
+  MEM_DEFINE_LOCAL_ARRAY (string_params_p,
+                          arguments_list_len == 0 ? 1 : arguments_list_len,
+                          ecma_string_t*);
+  uint32_t params_count;
+
+  size_t zt_strings_buffer_size;
+
+  if (arguments_list_len == 0)
+  {
+    string_params_p[0] = ecma_new_ecma_string_from_magic_string_id (ECMA_MAGIC_STRING__EMPTY);
+    zt_strings_buffer_size = sizeof (ecma_char_t);
+    params_count = 1;
+  }
+  else
+  {
+    zt_strings_buffer_size = 0;
+
+    for (params_count = 0;
+         params_count < arguments_list_len;
+         params_count++)
+    {
+      completion = ecma_op_to_string (arguments_list_p[params_count]);
+
+      if (ecma_is_completion_value_throw (completion))
+      {
+        break;
+      }
+      else
+      {
+        JERRY_ASSERT (ecma_is_completion_value_normal (completion));
+
+        string_params_p[params_count] = ecma_get_string_from_completion_value (completion);
+        zt_strings_buffer_size +=
+        (size_t) ecma_string_get_length (string_params_p[params_count]) + sizeof (ecma_char_t);
+      }
+    }
+  }
+
+  if (arguments_list_len == 0
+      || !ecma_is_completion_value_throw (completion))
+  {
+    completion = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+
+    /*
+     * If there were no exceptions during arguments conversion,
+     * representing ecma-strings in zero-terminated form.
+     */
+
+    MEM_DEFINE_LOCAL_ARRAY (zt_string_params_p,
+                            params_count,
+                            ecma_char_t*);
+    MEM_DEFINE_LOCAL_ARRAY (zt_string_buffer_p,
+                            zt_strings_buffer_size,
+                            ecma_char_t);
+
+    ssize_t zt_string_buffer_pos = 0;
+    for (uint32_t i = 0; i < params_count; i++)
+    {
+      ssize_t sz = ecma_string_to_zt_string (string_params_p[i],
+                                             &zt_string_buffer_p[zt_string_buffer_pos],
+                                             (ssize_t) zt_strings_buffer_size - zt_string_buffer_pos);
+      JERRY_ASSERT (sz > 0);
+
+      zt_string_params_p[i] = zt_string_buffer_p + zt_string_buffer_pos;
+
+      zt_string_buffer_pos += sz;
+    }
+
+    parser_init ();
+    parser_parse_new_function ((const char **) zt_string_params_p, params_count);
+    const opcode_t* opcodes = (const opcode_t*) serializer_get_bytecode ();
+    serializer_print_opcodes ();
+    parser_free ();
+
+    ecma_object_t *glob_lex_env_p = ecma_get_global_environment ();
+
+    ecma_object_t *func_obj_p = ecma_op_create_function_object (params_count > 1u ? string_params_p : NULL,
+                                                                (ecma_length_t) (params_count - 1u),
+                                                                glob_lex_env_p,
+                                                                false,
+                                                                opcodes,
+                                                                0);
+
+    ecma_deref_object (glob_lex_env_p);
+
+    completion = ecma_make_normal_completion_value (ecma_make_object_value (func_obj_p));
+
+    MEM_FINALIZE_LOCAL_ARRAY (zt_string_buffer_p);
+    MEM_FINALIZE_LOCAL_ARRAY (zt_string_params_p);
+  }
+
+  for (uint32_t i = 0; i < params_count; i++)
+  {
+    ecma_deref_ecma_string (string_params_p[i]);
+  }
+
+  MEM_FINALIZE_LOCAL_ARRAY (string_params_p);
+
+  return completion;
 } /* ecma_builtin_function_dispatch_construct */
 
 /**

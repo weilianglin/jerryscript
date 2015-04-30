@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,11 @@
 
 #include "jrt.h"
 
-void parser_init (const char *, size_t, bool);
-void parser_parse_program (void);
+void parser_init ();
+void parser_set_show_opcodes (bool);
+void parser_parse_program (const char *, size_t);
+bool parser_parse_eval (const char *, size_t);
+void parser_parse_new_function (const char **, size_t);
 void parser_free (void);
 
 #endif

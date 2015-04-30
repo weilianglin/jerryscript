@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ ecma_op_create_function_object (ecma_string_t* formal_parameter_list_p[],
                                 ecma_length_t formal_parameters_number,
                                 ecma_object_t *scope_p,
                                 bool is_strict,
-                                opcode_counter_t first_opcode_idx);
+                                const opcode_t *opcodes_p,
+                                opcode_counter_t first_opcode_index);
 extern ecma_object_t*
 ecma_op_create_external_function_object (ecma_external_pointer_t code_p);
 
@@ -56,6 +57,7 @@ ecma_op_function_has_instance (ecma_object_t *func_obj_p,
 extern ecma_completion_value_t
 ecma_op_function_declaration (ecma_object_t *lex_env_p,
                               ecma_string_t *function_name_p,
+                              const opcode_t *opcodes_p,
                               opcode_counter_t function_code_opcode_idx,
                               ecma_string_t* formal_parameter_list_p[],
                               ecma_length_t formal_parameter_list_length,

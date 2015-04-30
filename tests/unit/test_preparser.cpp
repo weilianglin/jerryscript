@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,9 @@ main (int __attr_unused___ argc,
 
   mem_init ();
   serializer_init ();
-  parser_init (program, strlen (program), true);
-  parser_parse_program ();
+  parser_set_show_opcodes (true);
+  parser_init ();
+  parser_parse_program (program, strlen (program));
   parser_free ();
 
   opcode_t opcodes[] =

@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,12 @@ do { \
   NAME.data = array_list_init (sizeof (NAME##_stack_value_type)); \
 } while (0)
 
+#define STACK_INIT_FROM_RAW(NAME, DATA, SIZE) \
+do { \
+  NAME.data = array_list_init_from_raw (sizeof (NAME##_stack_value_type), DATA, SIZE); \
+} while (0)
+
+
 #define STACK_FREE(NAME) \
 do { \
   array_list_free (NAME.data); \
@@ -118,8 +124,8 @@ static void NAME##_stack_push (TYPE value) { \
 }
 
 #define DEFINE_CONVERT_TO_RAW_DATA(NAME, TYPE) \
-static TYPE *convert_##NAME##_to_raw_data (void) __attr_unused___; \
-static TYPE *convert_##NAME##_to_raw_data (void) { \
+static TYPE *convert_##NAME##_to_raw_data () __attr_unused___; \
+static TYPE *convert_##NAME##_to_raw_data () { \
   if (array_list_len (NAME.data) == 0) \
   { \
     return NULL; \
@@ -177,8 +183,8 @@ NAME##_stack_element ((size_t) (I))
 #define STACK_SET_ELEMENT(NAME, I, VALUE) \
 do { set_##NAME##_stack_element ((size_t) I, VALUE); } while (0)
 
-#define STACK_CONVERT_TO_RAW_DATA(NAME, DATA) \
-do { DATA = convert_##NAME##_to_raw_data (); } while (0)
+#define STACK_CONVERT_TO_RAW_DATA(NAME, DATA_OUT) \
+do { DATA_OUT = convert_##NAME##_to_raw_data (); } while (0)
 
 #define STACK_INCR_ELEMENT(NAME, I) \
 do { STACK_SET_ELEMENT (NAME, I, (NAME##_stack_value_type) (STACK_ELEMENT (NAME, I) + 1)); } while (0)
