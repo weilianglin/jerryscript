@@ -33,6 +33,8 @@ project (Jerry_Plugins CXX ASM)
     set(DEFINES_PLUGINS_MCU_STM32F3 __TARGET_MCU __TARGET_MCU_STM32F3)
    # stm32f4
     set(DEFINES_PLUGINS_MCU_STM32F4 __TARGET_MCU __TARGET_MCU_STM32F4)
+   # <board-name>
+    set(DEFINES_PLUGINS_MCU_<BOARD-NAME> __TARGET_MCU __TARGET_MCU_<BOARD-NAME>)
   # Nuttx
    set(DEFINES_PLUGINS_NUTTX __TARGET_NUTTX)
 
@@ -61,6 +63,9 @@ project (Jerry_Plugins CXX ASM)
         ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/STM32F4xx_StdPeriph_Driver/inc
         ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/CMSIS/Include
         ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0)
+    # <BOARD-NAME>
+     set(INCLUDE_THIRD_PARTY_MCU_<BOARD-NAME>
+        ${CMAKE_SOURCE_DIR}/third-party/<include paths for third-party headers related to the board>)
 
    # Nuttx
     set(INCLUDE_THIRD_PARTY_NUTTX )
@@ -85,6 +90,9 @@ project (Jerry_Plugins CXX ASM)
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_tim.c
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_gpio.c
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_rcc.c)
+    # <board-name>
+     set(SOURCE_THIRD_PARTY_MCU_<BOARD-NAME>
+        ${CMAKE_SOURCE_DIR}/third-party/<paths to third-party modules related to the board>)
 
 # Platform-specific configuration
  set(DEFINES_PLUGINS ${DEFINES_PLUGINS_${PLATFORM_EXT}})

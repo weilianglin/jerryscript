@@ -44,6 +44,8 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
     set(DEFINES_LIBC_MCU_STM32F3 __TARGET_MCU_STM32F3)
    # stm32f4
     set(DEFINES_LIBC_MCU_STM32F4 __TARGET_MCU_STM32F4)
+   # <board-name>
+    set(DEFINES_LIBC_MCU_<BOARD-NAME> __TARGET_MCU_<BOARD-NAME>)
 
 # Include directories
  set(INCLUDE_LIBC ${CMAKE_SOURCE_DIR}/jerry-libc)
@@ -58,6 +60,10 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
     set(INCLUDE_LIBC_MCU_STM32F3 target/mcu-stubs)
    # STM32F4
     set(INCLUDE_LIBC_MCU_STM32F4 target/mcu-stubs)
+   # <BOARD-NAME>
+    set(INCLUDE_LIBC_MCU_<BOARD-NAME> <target/mcu-stubs - for stubs
+                                       or target/mcu-<board-name> - if target-dependent part of libc
+                                       is supposed to be implemented for the board>)
 
  # Third-party
   # Platform-specific
@@ -73,6 +79,9 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
      set(INCLUDE_THIRD_PARTY_MCU_STM32F4
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/CMSIS/ST/STM32F4xx/Include
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/CMSIS/Include)
+    # <BOARD-NAME>
+     set(INCLUDE_THIRD_PARTY_MCU_<BOARD-NAME>
+         ${CMAKE_SOURCE_DIR}/third-party/<third-party include paths for headers related to the board>)
 
 # Sources
  file(GLOB SOURCE_LIBC *.c)
@@ -86,6 +95,9 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
     file(GLOB SOURCE_LIBC_MCU_STM32F3 target/mcu-stubs/*.c target/mcu-stubs/*.S)
    # stm32f4
     file(GLOB SOURCE_LIBC_MCU_STM32F4 target/mcu-stubs/*.c target/mcu-stubs/*.S)
+   # <board-name>
+    file(GLOB SOURCE_LIBC_MCU_<BOARD-NAME> <target-dependent part /mcu-stubs/*.c target/mcu-stubs/*.S
+                                            or target/mcu-<board-name>/*.c target/mcu-<board-name>/*.S>)
 
  # Third-party
   # Platform-specific
@@ -98,6 +110,9 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
      set(SOURCE_THIRD_PARTY_MCU_STM32F4
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/CMSIS/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
          ${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Libraries/CMSIS/ST/STM32F4xx/Source/Templates/gcc_ride7/startup_stm32f4xx.s)
+    # <board-name>
+     set(SOURCE_THIRD_PARTY_MCU_<BOARD-NAME>
+         ${CMAKE_SOURCE_DIR}/third-party/<paths to third-party modules related to the board>)
 
 # Architecture-specific configuration
  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")

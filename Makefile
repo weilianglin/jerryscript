@@ -15,7 +15,7 @@
 #
 # Target naming scheme
 #
-#   Main targets: {debug,release}.{linux,stm32f{4}}[.flash]
+#   Main targets: {debug,release}.{linux,stm32f{3,4},<board-name>}[.flash]
 #
 #    Target mode part (before dot):
 #       debug:         - JERRY_NDEBUG; - optimizations; + debug symbols; + -Werror  | debug build
@@ -23,7 +23,7 @@
 #
 #    Target system and modifiers part (after first dot):
 #       linux - target system is linux
-#       mcu_stm32f{3,4} - target is STM32F{3,4} board
+#       mcu_{stm32f{3,4},<board-name>} - target is STM32F{3,4}, <BOARD-NAME> board
 #
 #       Modifiers can be added after '-' sign.
 #        For list of modifiers for PC target - see TARGET_PC_MODS, for MCU target - TARGET_MCU_MODS.
@@ -88,6 +88,7 @@ export TARGET_NUTTX_SYSTEMS_MODS = $(TARGET_NUTTX_SYSTEMS) \
                                    $(foreach __MOD,$(TARGET_NUTTX_MODS),$(foreach __SYSTEM,$(TARGET_NUTTX_SYSTEMS),$(__SYSTEM)-$(__MOD)))
 export TARGET_STM32F3_MODS = $(foreach __MOD,$(TARGET_MCU_MODS),mcu_stm32f3-$(__MOD))
 export TARGET_STM32F4_MODS = $(foreach __MOD,$(TARGET_MCU_MODS),mcu_stm32f4-$(__MOD))
+export TARGET_<BOARD-NAME>_MODS = $(foreach __MOD,$(TARGET_MCU_MODS),mcu_<board-name>-$(__MOD))
 
 # Target list
 export JERRY_LINUX_TARGETS = $(foreach __MODE,$(TARGET_DEBUG_MODES),$(foreach __SYSTEM,$(TARGET_PC_SYSTEMS_MODS),$(__MODE).$(__SYSTEM))) \
@@ -100,10 +101,13 @@ export JERRY_STM32F3_TARGETS = $(foreach __MODE,$(TARGET_RELEASE_MODES),$(foreac
 export JERRY_STM32F4_TARGETS = $(foreach __MODE,$(TARGET_DEBUG_MODES),$(foreach __SYSTEM,$(TARGET_STM32F4_MODS),$(__MODE).$(__SYSTEM))) \
                                $(foreach __MODE,$(TARGET_RELEASE_MODES),$(foreach __SYSTEM,$(TARGET_STM32F4_MODS),$(__MODE).$(__SYSTEM)))
 
-export JERRY_TARGETS = $(JERRY_LINUX_TARGETS) $(JERRY_NUTTX_TARGETS) $(JERRY_STM32F3_TARGETS) $(JERRY_STM32F4_TARGETS) unittests
+export JERRY_<BOARD_NAME>_TARGETS = $(foreach __MODE,$(TARGET_DEBUG_MODES),$(foreach __SYSTEM,$(TARGET_<BOARD_NAME>_MODS),$(__MODE).$(__SYSTEM))) \
+                                    $(foreach __MODE,$(TARGET_RELEASE_MODES),$(foreach __SYSTEM,$(TARGET_<BOARD_NAME>_MODS),$(__MODE).$(__SYSTEM)))
+
+export JERRY_TARGETS = $(JERRY_LINUX_TARGETS) $(JERRY_NUTTX_TARGETS) $(JERRY_STM32F3_TARGETS) $(JERRY_STM32F4_TARGETS) $(JERRY_<BOARD_NAME>_TARGETS) unittests
 
 export CHECK_TARGETS = $(foreach __TARGET,$(JERRY_LINUX_TARGETS),$(__TARGET).check)
-export FLASH_TARGETS = $(foreach __TARGET,$(JERRY_STM32F3_TARGETS) $(JERRY_STM32F4_TARGETS),$(__TARGET).flash)
+export FLASH_TARGETS = $(foreach __TARGET,$(JERRY_STM32F3_TARGETS) $(JERRY_STM32F4_TARGETS) $(JERRY_<BOARD_NAME>_TARGETS),$(__TARGET).flash)
 
 export OUT_DIR = ./build/bin
 export PREREQUISITES_STATE_DIR = ./build/prerequisites
@@ -131,9 +135,11 @@ export SHELL=/bin/bash
   BUILD_DIRS_STM32F3 := $(foreach _OPTIONS_COMBINATION,$(OPTIONS_COMBINATIONS),$(BUILD_DIR_PREFIX)$(_OPTIONS_COMBINATION)/stm32f3)
  # stm32f4
   BUILD_DIRS_STM32F4 := $(foreach _OPTIONS_COMBINATION,$(OPTIONS_COMBINATIONS),$(BUILD_DIR_PREFIX)$(_OPTIONS_COMBINATION)/stm32f4)
+ # <board-name>
+  BUILD_DIRS_<BOARD-NAME> := $(foreach _OPTIONS_COMBINATION,$(OPTIONS_COMBINATIONS),$(BUILD_DIR_PREFIX)$(_OPTIONS_COMBINATION)/<board-name>)
 
  # All together
-  BUILD_DIRS_ALL := $(BUILD_DIRS_NATIVE) $(BUILD_DIRS_NUTTX) $(BUILD_DIRS_STM32F3) $(BUILD_DIRS_STM32F4)
+  BUILD_DIRS_ALL := $(BUILD_DIRS_NATIVE) $(BUILD_DIRS_NUTTX) $(BUILD_DIRS_STM32F3) $(BUILD_DIRS_STM32F4) $(BUILD_DIRS_<BOARD-NAME>)
 
  # Current
   BUILD_DIR := ./build/obj$(OPTIONS_STRING)
@@ -185,6 +191,12 @@ $(BUILD_DIRS_STM32F4): prerequisites
 	@ mkdir -p $@ && \
           cd $@ && \
           cmake -DENABLE_VALGRIND=$(VALGRIND) -DENABLE_LTO=$(LTO) -DCMAKE_TOOLCHAIN_FILE=build/configs/toolchain_mcu_stm32f4.cmake ../../.. &>cmake.log || \
+          (echo "CMake run failed. See "`pwd`"/cmake.log for details."; exit 1;)
+
+$(BUILD_DIRS_<BOARD-NAME>): prerequisites
+	@ mkdir -p $@ && \
+          cd $@ && \
+          cmake -DENABLE_VALGRIND=$(VALGRIND) -DENABLE_LTO=$(LTO) -DCMAKE_TOOLCHAIN_FILE=build/configs/toolchain_mcu_<board-name>.cmake ../../.. &>cmake.log || \
           (echo "CMake run failed. See "`pwd`"/cmake.log for details."; exit 1;)
 
 $(JERRY_LINUX_TARGETS): $(BUILD_DIR)/native
@@ -263,7 +275,25 @@ $(BUILD_ALL)_stm32f4: $(BUILD_DIRS_STM32F4)
 	@ $(MAKE) -C $(BUILD_DIR)/stm32f4 $(JERRY_STM32F4_TARGETS) VERBOSE=1 &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 
-build_all: $(BUILD_ALL)_native $(BUILD_ALL)_nuttx $(BUILD_ALL)_stm32f3 $(BUILD_ALL)_stm32f4
+$(JERRY_<BOARD-NAME>_TARGETS): $(BUILD_DIR)/<board-name>
+	@ mkdir -p $(OUT_DIR)/$@
+	@ [ "$(STATIC_CHECK)" = "OFF" ] || $(MAKE) -C $(BUILD_DIR)/<board-name> VERBOSE=1 cppcheck.$@ &>$(OUT_DIR)/$@/cppcheck.log || \
+          (echo "cppcheck run failed. See $(OUT_DIR)/$@/cppcheck.log for details."; exit 1;)
+	@ $(MAKE) -C $(BUILD_DIR)/<board-name> VERBOSE=1 $@.bin &>$(OUT_DIR)/$@/make.log || \
+          (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
+	@ cp $(BUILD_DIR)/<board-name>/$@ $(OUT_DIR)/$@/jerry
+	@ cp $(BUILD_DIR)/<board-name>/$@.bin $(OUT_DIR)/$@/jerry.bin
+
+$(BUILD_ALL)_<board-name>: $(BUILD_DIRS_<BOARD-NAME>)
+	@ mkdir -p $(OUT_DIR)/$@
+	@ $(MAKE) -C $(BUILD_DIR)/<board-name> jerry-libc-all VERBOSE=1 &>$(OUT_DIR)/$@/make.log || \
+          (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
+	@ $(MAKE) -C $(BUILD_DIR)/<board-name> plugins-all VERBOSE=1 &>$(OUT_DIR)/$@/make.log || \
+          (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
+	@ $(MAKE) -C $(BUILD_DIR)/<board-name> $(JERRY_<BOARD-NAME>_TARGETS) VERBOSE=1 &>$(OUT_DIR)/$@/make.log || \
+          (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
+
+build_all: $(BUILD_ALL)_native $(BUILD_ALL)_nuttx $(BUILD_ALL)_stm32f3 $(BUILD_ALL)_stm32f4 $(BUILD_ALL)_<board-name>
 
 #
 # build - build_all, then run cppcheck and copy output to OUT_DIR

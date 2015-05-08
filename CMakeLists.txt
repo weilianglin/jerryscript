@@ -180,6 +180,12 @@ project (Jerry CXX C ASM)
       "COMPACT_PROFILE"
       "COMPACT_PROFILE_MINIMAL")
 
+  # <board-name>
+   set(MODIFIERS_LISTS_MCU_<BOARD-NAME>
+      "FULL_PROFILE"
+      "COMPACT_PROFILE"
+      "COMPACT_PROFILE_MINIMAL")
+
  # Nuttx
   set(MODIFIERS_LISTS_NUTTX
       ${MODIFIERS_LISTS_LINUX})
@@ -225,6 +231,8 @@ project (Jerry CXX C ASM)
     set(LINKER_FLAGS_COMMON_MCU_STM32F3 "-T${CMAKE_SOURCE_DIR}/third-party/STM32F3-Discovery_FW_V1.1.0/Project/Peripheral_Examples/FLASH_Program/TrueSTUDIO/FLASH_Program/STM32_FLASH.ld")
    # stm32f4
     set(LINKER_FLAGS_COMMON_MCU_STM32F4 "-T${CMAKE_SOURCE_DIR}/third-party/STM32F4-Discovery_FW_V1.1.0/Project/Peripheral_Examples/FLASH_Program/TrueSTUDIO/FLASH_Program/stm32_flash.ld")
+   # <board-name>
+    set(LINKER_FLAGS_COMMON_MCU_<BOARD-NAME> "-T${CMAKE_SOURCE_DIR}/<path-to-linker-script>")
 
  # Debug
   set(FLAGS_COMMON_DEBUG "-nostdlib")
@@ -252,6 +260,9 @@ project (Jerry CXX C ASM)
 
     # stm32f4
      set(SOURCE_JERRY_STANDALONE_MAIN_MCU_STM32F4 main-mcu.cpp)
+
+    # <board-name>
+     set(SOURCE_JERRY_STANDALONE_MAIN_MCU_<BOARD-NAME> <module-containing-main-for-the-board>.cpp)
 
    # Nuttx
     set(SOURCE_JERRY_STANDALONE_MAIN_NUTTX main-nuttx.cpp)
