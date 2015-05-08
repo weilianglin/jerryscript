@@ -35,6 +35,8 @@ project (Jerry_Plugins CXX ASM)
     set(DEFINES_PLUGINS_MCU_STM32F4 __TARGET_MCU __TARGET_MCU_STM32F4)
   # Nuttx
    set(DEFINES_PLUGINS_NUTTX __TARGET_NUTTX)
+  # <os-name>
+   set(DEFINES_PLUGINS_<OS-NAME> __TARGET_<OS-NAME>)
 
 # Include directories
  set(INCLUDE_PLUGINS
@@ -64,6 +66,9 @@ project (Jerry_Plugins CXX ASM)
 
    # Nuttx
     set(INCLUDE_THIRD_PARTY_NUTTX )
+
+   # <os-name>
+    set(INCLUDE_THIRD_PARTY_<OS-NAME> )
 
 # Sources
  file(GLOB SOURCE_PLUGINS

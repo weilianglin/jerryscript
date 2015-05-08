@@ -184,6 +184,10 @@ project (Jerry CXX C ASM)
   set(MODIFIERS_LISTS_NUTTX
       ${MODIFIERS_LISTS_LINUX})
 
+ # <os-name>
+  set(MODIFIERS_LISTS_<OS-NAME>
+      ${MODIFIERS_LISTS_LINUX})
+
 # Compiler / Linker flags
  set(COMPILE_FLAGS_JERRY "-fno-builtin")
  set(LINKER_FLAGS_COMMON "-Wl,-z,noexecstack")
@@ -255,6 +259,9 @@ project (Jerry CXX C ASM)
 
    # Nuttx
     set(SOURCE_JERRY_STANDALONE_MAIN_NUTTX main-nuttx.cpp)
+
+   # <os-name>
+    set(SOURCE_JERRY_STANDALONE_MAIN_<OS-NAME> main-<os-name>.cpp)
 
  # Unit tests main modules
   file(GLOB SOURCE_UNIT_TEST_MAIN_MODULES tests/unit/*.cpp)

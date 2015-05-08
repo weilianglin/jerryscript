@@ -38,6 +38,8 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
  # Platform-specific
   # Linux
    set(DEFINES_LIBC_LINUX __TARGET_HOST)
+  # <os-name>
+   set(DEFINES_LIBC_<OS-NAME> __TARGET_<OS-NAME>)
   # MCU
    set(DEFINES_LIBC_MCU __TARGET_MCU)
    # stm32f3
@@ -53,6 +55,8 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
  # Platform-specific
   # Linux
    set(INCLUDE_LIBC_LINUX target/linux)
+  # <os-name>
+   set(INCLUDE_LIBC_<OS-NAME> target/<os-name>)
   # MCU
    # STM32F3
     set(INCLUDE_LIBC_MCU_STM32F3 target/mcu-stubs)
@@ -63,6 +67,8 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
   # Platform-specific
    # Linux
      set(INCLUDE_THIRD_PARTY_LINUX )
+   # <os-name>
+     set(INCLUDE_THIRD_PARTY_<OS-NAME> )
 
    # MCU
     # STM32F3
@@ -80,6 +86,8 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
  # Platform-specific
   # Linux
    file(GLOB SOURCE_LIBC_LINUX target/linux/*.c target/linux/*.S)
+  # <os-name>
+    set(GLOB SOURCE_LIBC_<OS-NAME> target/<os-name>/*.c target/<os-name>/*.S)
 
   # MCU
    # stm32f3
@@ -89,6 +97,8 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
 
  # Third-party
   # Platform-specific
+   # <os-name>
+     set(SOURCE_THIRD_PARTY_<OS-NAME> )
    # MCU
     # stm32f3
      set(SOURCE_THIRD_PARTY_MCU_STM32F3
@@ -111,7 +121,7 @@ set(COMPILE_FLAGS_LIBC "${COMPILE_FLAGS_JERRY} ${C_FLAGS_JERRY}")
  endif()
  
 # Platform-specific configuration
- set(DEFINES_LIBC ${DEFINES_LIBC} ${DEFINES_LIBC_${PLATFORM}})
+ set(DEFINES_LIBC ${DEFINES_LIBC} ${DEFINES_LIBC_${PLATFORM}} ${DEFINES_LIBC_${PLATFORM_EXT}})
 
 # Targets declaration 
  add_custom_target (jerry-libc-all)

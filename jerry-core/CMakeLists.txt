@@ -82,6 +82,8 @@ project (JerryCore CXX C ASM)
   # Nuttx
    math(EXPR MEM_HEAP_AREA_SIZE_16K "16 * 1024")
    set(DEFINES_JERRY_NUTTX CONFIG_MEM_HEAP_AREA_SIZE=${MEM_HEAP_AREA_SIZE_16K})
+  # <os-name>
+   set(DEFINES_JERRY_<OS-NAME> )
   # MCU
    # stm32f3
     math(EXPR MEM_HEAP_AREA_SIZE_16K "16 * 1024")

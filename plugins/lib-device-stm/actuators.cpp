@@ -20,7 +20,7 @@
 #include "actuators.h"
 #include "common-io.h"
 
-#if defined (__TARGET_HOST) || defined (__TARGET_NUTTX)
+#if defined (__TARGET_HOST) || defined (__TARGET_NUTTX) || defined (__TARGET_<OS-NAME>)
 /**
  * Host stub for LEDToggle operation
  */
@@ -56,9 +56,9 @@ led_blink_once (uint32_t led_id) /**< index of LED */
 {
   printf ("led_blink_once: %lu\n", led_id);
 }
-#else /* !__TARGET_HOST && !__TARGET_NUTTX */
+#else /* !__TARGET_HOST && !__TARGET_NUTTX && !__TARGET_<OS-NAME> */
 #ifndef __TARGET_MCU
-# error "!__TARGET_HOST && && !__TARGET_NUTTX !__TARGET_MCU"
+# error "!__TARGET_HOST && !__TARGET_NUTTX && !__TARGET_<OS-NAME> && !__TARGET_MCU"
 #endif /* !__TARGET_MCU */
 
 #include "mcu-headers.h"
@@ -230,4 +230,4 @@ led_blink_once (uint32_t led_id) /**< index of LED */
   led_off (led_id);
 } /* led_blink_once */
 
-#endif /* !__TARGET_HOST && !__TARGET_NUTTX && __TARGET_MCU */
+#endif /* !__TARGET_HOST && !__TARGET_NUTTX && !__TARGET_<OS-NAME> && __TARGET_MCU */
