@@ -19,6 +19,7 @@
 #include "parser.h"
 #include "jrt-libc-includes.h"
 #include "pretty-printer.h"
+#include "lit/lit-literal-storage.h"
 
 static bytecode_data_t bytecode_data;
 static scopes_tree current_scope;
@@ -188,6 +189,8 @@ serializer_init ()
   bytecode_data.literals = NULL;
   bytecode_data.opcodes = NULL;
   bytecode_data.lit_id_hash = null_hash;
+
+  lit_storage.init ();
 }
 
 void serializer_set_show_opcodes (bool show_opcodes)
@@ -211,4 +214,6 @@ serializer_free (void)
     mem_heap_free_block ((uint8_t *) bytecode_data.literals);
   }
   mem_heap_free_block ((uint8_t *) bytecode_data.opcodes);
+
+  lit_storage.finalize ();
 }

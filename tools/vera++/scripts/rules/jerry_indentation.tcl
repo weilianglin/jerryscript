@@ -63,16 +63,16 @@ foreach fileName [getSourceFileNames] {
                 if {$lineNumber != $lastCheckedLineNumber} {
                     if {[regexp {^[[:blank:]]*} $line match]} {
                         set real_indent [string length $match]
-                          if {$indent != $real_indent} {
-                              if {[regexp {^[[:blank:]]*(private:|public:|protected:)} $line]} {
-                                  if {$indent != $real_indent + 1} {
-                                      set exp_indent [expr  {$indent - 1}]
-                                      report $fileName $lineNumber "Indentation: $real_indent -> $exp_indent. Line: '$line'"
-                                  }
-                              } elseif {![regexp {^[[:alnum:]_]{1,}:$} $line] || $real_indent != 0} {
-                                  report $fileName $lineNumber "Indentation: $real_indent -> $indent. Line: '$line'"
-                              }
-                          }
+                        if {$indent != $real_indent} {
+                            if {[regexp {^[[:blank:]]*(private:|public:|protected:)} $line]} {
+                                if {$indent != $real_indent + 1} {
+                                    set exp_indent [expr  {$indent - 1}]
+                                    report $fileName $lineNumber "Indentation: $real_indent -> $exp_indent. Line: '$line'"
+                                }
+                            } elseif {![regexp {^[[:alnum:]_]{1,}:$} $line] || $real_indent != 0} {
+                                report $fileName $lineNumber "Indentation: $real_indent -> $indent. Line: '$line'"
+                            }
+                        }
                     }
                 }
 

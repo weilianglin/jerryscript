@@ -388,3 +388,9 @@ main (int __attr_unused___ argc,
 
   return 0;
 } /* main */
+
+template test_rcs_record_type_one_t *
+rcs_recordset_t::alloc_record<test_rcs_record_type_one_t> (rcs_record_t::type_t, uint32_t);
+
+template test_rcs_record_type_two_t *
+rcs_recordset_t::alloc_record<test_rcs_record_type_two_t> (rcs_record_t::type_t);

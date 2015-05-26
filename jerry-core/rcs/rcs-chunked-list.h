@@ -47,6 +47,7 @@ class rcs_chunked_list_t
   } node_t;
 
   void init (void);
+  void cleanup (void);
   void free (void);
 
   node_t *get_first (void) const;

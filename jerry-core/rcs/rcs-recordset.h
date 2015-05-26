@@ -73,6 +73,11 @@ class rcs_recordset_t
     _chunk_list.free ();
   } /* finalize */
 
+  void cleanup (void)
+  {
+    _chunk_list.cleanup ();
+  }
+
   /**
    * Record type
    */
@@ -140,6 +145,9 @@ class rcs_recordset_t
     static const uint32_t _fields_offset_begin = _type_field_pos + _type_field_width;
   };
 
+  record_t* get_first (void);
+  record_t* get_next (record_t* rec_p);
+
  private:
   friend class rcs_record_iterator_t;
 
@@ -159,6 +167,7 @@ class rcs_recordset_t
 
   void init_free_record (record_t *free_rec_p, size_t size, record_t *prev_rec_p);
   bool is_record_free (record_t *record_p);
+
  protected:
   /**
    * First type identifier that can be used for storage-specific record types
@@ -195,10 +204,8 @@ class rcs_recordset_t
   record_t* alloc_space_for_record (size_t bytes, record_t** out_prev_rec_p);
   void free_record (record_t* record_p);
 
-  record_t* get_first (void);
-
   virtual record_t* get_prev (record_t* rec_p);
-  record_t* get_next (record_t* rec_p);
+
   virtual void set_prev (record_t* rec_p, record_t *prev_rec_p);
 
   virtual size_t get_record_size (record_t* rec_p);
@@ -246,8 +253,7 @@ class rcs_record_iterator_t
     ACCESS_SKIP
   } access_t;
 
-  template<typename T>
-  void access (access_t access_type, T* data)
+  void access (access_t access_type, void* data, size_t size)
   {
     const size_t node_data_space_size = _recordset_p->_chunk_list.get_data_space_size ();
     const size_t record_size = _recordset_p->get_record_size (_record_start_p);
@@ -291,30 +297,30 @@ class rcs_record_iterator_t
 
     left_in_node = node_data_space_size - (size_t)(_current_pos_p - current_node_data_space_p);
 
-    JERRY_ASSERT (current_offset + sizeof (T) <= record_size);
+    JERRY_ASSERT (current_offset + size <= record_size);
 
     /*
      * Part II.
      * Read the data and increase the current position pointer.
      */
-    if (left_in_node >= sizeof (T))
+    if (left_in_node >= size)
     {
       /* all data is placed inside single node */
       if (access_type == ACCESS_RD)
       {
-        *data = *(T *)_current_pos_p;
+        memcpy (data, _current_pos_p, size);
       }
       else if (access_type == ACCESS_WR)
       {
-        *(T *)_current_pos_p = *data;
+        memcpy (_current_pos_p, data, size);
       }
       else
       {
-        if (left_in_node > sizeof (T))
+        if (left_in_node > size)
         {
-          _current_pos_p += sizeof (T);
+          _current_pos_p += size;
         }
-        else if (current_offset + sizeof (T) < record_size)
+        else if (current_offset + size < record_size)
         {
           current_node_p = _recordset_p->_chunk_list.get_next (current_node_p);
           JERRY_ASSERT (current_node_p);
@@ -342,22 +348,22 @@ class rcs_record_iterator_t
 
       if (access_type == ACCESS_RD)
       {
-        memcpy ((uint8_t *)data + first_chunk_size, current_node_data_space_p, sizeof (T) - first_chunk_size);
+        memcpy ((uint8_t *)data + first_chunk_size, current_node_data_space_p, size - first_chunk_size);
       }
       else if (access_type == ACCESS_WR)
       {
-        memcpy (current_node_data_space_p, (uint8_t *)data + first_chunk_size, sizeof (T) - first_chunk_size);
+        memcpy (current_node_data_space_p, (uint8_t *)data + first_chunk_size, size - first_chunk_size);
       }
       else
       {
-        _current_pos_p = current_node_data_space_p + sizeof (T) - first_chunk_size;
+        _current_pos_p = current_node_data_space_p + size - first_chunk_size;
       }
     }
 
     /* check if we reached the end */
     if (access_type == ACCESS_SKIP)
     {
-      if (current_offset + sizeof (T) == record_size)
+      if (current_offset + size == record_size)
       {
         _current_pos_p = nullptr;
       }
@@ -368,18 +374,23 @@ class rcs_record_iterator_t
   template<typename T> T read (void)
   {
     T data;
-    access (ACCESS_RD, &data);
+    access (ACCESS_RD, &data, sizeof (T));
     return data;
   }
 
   template<typename T> void write (T value)
   {
-    access (ACCESS_WR, &value);
+    access (ACCESS_WR, &value, sizeof (T));
   }
 
   template<typename T> void skip ()
   {
-    access<T> (ACCESS_SKIP, nullptr);
+    access (ACCESS_SKIP, NULL, sizeof (T));
+  }
+
+  void skip (size_t size)
+  {
+    access (ACCESS_SKIP, NULL, size);
   }
 
   bool finished ()

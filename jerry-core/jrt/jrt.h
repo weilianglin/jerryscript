@@ -150,6 +150,15 @@ template<typename... values> extern void jerry_ref_unused_variables (const value
       jerry_ref_unused_variables (0, __VA_ARGS__); \
     } \
   } while (0)
+
+#define JERRY_REF_UNUSED_VARS(...) \
+  do \
+  { \
+    if (false) \
+    { \
+      jerry_ref_unused_variables (0, __VA_ARGS__); \
+    } \
+  } while (0)
 #else /* !JERRY_NDEBUG */
 #define JERRY_UNREACHABLE() \
   do \
@@ -172,7 +181,18 @@ template<typename... values> extern void jerry_ref_unused_variables (const value
       jerry_ref_unused_variables (0, __VA_ARGS__); \
     } \
   } while (0)
+
+#define JERRY_REF_UNUSED_VARS(...) \
+  do \
+  { \
+    if (false) \
+    { \
+      jerry_ref_unused_variables (0, __VA_ARGS__); \
+    } \
+  } while (0)
 #endif /* JERRY_NDEBUG */
+
+
 
 /**
  * Conditions' likeliness, unlikeliness.

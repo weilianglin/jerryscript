@@ -135,6 +135,8 @@ const
   JERRY_ASSERT (sizeof (uint32_t) == RCS_DYN_STORAGE_LENGTH_UNIT);
   JERRY_ASSERT (field_pos + field_width <= RCS_DYN_STORAGE_LENGTH_UNIT * JERRY_BITSINBYTE);
 
+
+
   uint32_t value = *reinterpret_cast<const uint32_t*> (this);
   return (uint32_t) jrt_extract_bit_field (value, field_pos, field_width);
 } /* rcs_recordset_t::record_t::get_field */
@@ -612,6 +614,7 @@ rcs_recordset_t::assert_state_is_correct (void)
        rec_p != NULL;
        last_record_p = rec_p, rec_p = next_rec_p)
   {
+    JERRY_ASSERT (get_record_size (rec_p) > 0);
     record_size_sum += get_record_size (rec_p);
 
     rcs_chunked_list_t::node_t *node_p = _chunk_list.get_node_from_pointer (rec_p);
