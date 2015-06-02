@@ -16,17 +16,25 @@
 #ifndef LIT_LITERAL_H
 #define LIT_LITERAL_H
 
-#include "ecma/base/ecma-globals.h"
-#include "lit/lit-literal-storage.h"
+#include "ecma-globals.h"
+#include "lit-literal-storage.h"
 
-typedef rcs_record_t * literal_t;
+#define LITERAL_TO_REWRITE (INVALID_VALUE - 1)
+
+void lit_init ();
+void lit_finalize ();
+void lit_dump_literals ();
 
 literal_t lit_create_literal_from_zt (const ecma_char_t *, ecma_length_t);
 literal_t lit_create_literal_from_s (const char *s, ecma_length_t len);
+literal_t lit_find_or_create_literal_from_s (const char *s, ecma_length_t len);
 literal_t lit_create_literal_from_num (ecma_number_t);
+literal_t lit_find_or_create_literal_from_num (ecma_number_t);
 
-bool lit_find_literal_by_zt (const ecma_char_t *s, ecma_length_t len);
-bool lit_find_literal_by_s (const char *s, ecma_length_t len);
+bool lit_literal_exists (literal_t lit);
+literal_t lit_find_literal_by_zt (const ecma_char_t *s, ecma_length_t len);
+literal_t lit_find_literal_by_s (const char *s, ecma_length_t len);
+literal_t lit_find_literal_by_num (ecma_number_t);
 
 bool lit_literal_equal (literal_t, literal_t);
 bool lit_literal_equal_s (literal_t, const char *);
@@ -39,5 +47,10 @@ bool lit_literal_equal_type_s (literal_t, const char *);
 bool lit_literal_equal_type_zt (literal_t, const ecma_char_t *);
 bool lit_literal_equal_type_non_zt (literal_t, const ecma_char_t *, ecma_length_t);
 bool lit_literal_equal_type_num (literal_t, ecma_number_t);
+
+const ecma_char_t *lit_literal_to_zt (literal_t lit, ecma_char_t *buff, size_t size);
+const char *lit_literal_to_s_internal_buff (literal_t lit);
+
+literal_t lit_get_literal_by_cp (lit_cpointer_t);
 
 #endif /* LIT_LITERAL_H */

@@ -25,14 +25,10 @@
  */
 
 #include "ecma-alloc.h"
-#include "ecma-globals.h"
 #include "ecma-gc.h"
 #include "ecma-helpers.h"
 #include "ecma-lcache.h"
 #include "ecma-stack.h"
-#include "jrt.h"
-#include "jrt-libc-includes.h"
-#include "jrt-bit-fields.h"
 
 #define JERRY_INTERNAL
 #include "jerry-internal.h"

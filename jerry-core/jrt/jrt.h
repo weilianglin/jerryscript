@@ -234,4 +234,12 @@ extern void __noreturn jerry_fatal (jerry_fatal_code_t code);
 #define JERRY_MIN(v1, v2) ((v1 < v2) ? v1 : v2)
 #define JERRY_MAX(v1, v2) ((v1 < v2) ? v2 : v1)
 
+/**
+ * placement new operator
+ */
+inline void* operator new (size_t, void* where)
+{
+  return where;
+}
+
 #endif /* !JERRY_GLOBALS_H */

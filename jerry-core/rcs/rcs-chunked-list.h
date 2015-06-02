@@ -37,6 +37,11 @@
 class rcs_chunked_list_t
 {
  public:
+  rcs_chunked_list_t ()
+  {
+    head_p = tail_p = NULL;
+  }
+
   /**
    * List node
    */

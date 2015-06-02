@@ -17,7 +17,6 @@
 #define LIT_LITERAL_STORAGE_H
 
 #include "ecma/base/ecma-globals.h"
-#include "rcs/rcs-recordset.h"
 
 class lit_literal_storage_t;
 extern lit_literal_storage_t lit_storage;
@@ -28,7 +27,8 @@ extern lit_literal_storage_t lit_storage;
  * type (4 bits)
  * alignment (2 bits)
  * contains_long_characters_flag (1 bit)
- * unused (9 bits)
+ * unused (1 bit)
+ * hash (8 bits)
  * pointer to prev (16 bits)
  * ------- characters -------------------
  * ...
@@ -73,7 +73,17 @@ class lit_charset_record : public rcs_record_t
     set_field (_has_special_characters_field_pos, _has_special_characters_field_width, (size_t) has_long_characters);
   }
 
-  size_t get_length () const
+  ecma_string_hash_t get_hash () const
+  {
+    return (ecma_string_hash_t) get_field (_hash_field_pos, _hash_field_width);
+  }
+
+  void set_hash (ecma_string_hash_t h)
+  {
+    set_field (_hash_field_pos, _hash_field_width, h);
+  }
+
+  ecma_length_t get_length () const
   {
     if (contains_long_characters ())
     {
@@ -81,7 +91,7 @@ class lit_charset_record : public rcs_record_t
     }
     else
     {
-      return (get_size () - header_size () - get_alignment_bytes_count ()) / sizeof (ecma_char_t);
+      return (ecma_length_t) ((get_size () - header_size () - get_alignment_bytes_count ()) / sizeof (ecma_char_t));
     }
   }
 
@@ -100,6 +110,7 @@ class lit_charset_record : public rcs_record_t
   rcs_record_t* get_prev () const;
   void set_prev (rcs_record_t* prev_rec_p);
   void set_charset (const ecma_char_t *s, size_t size);
+  void get_charset (ecma_char_t *buff, size_t size);
 
   int compare_zt (const ecma_char_t *, size_t);
   bool equal (lit_charset_record *);
@@ -113,8 +124,11 @@ class lit_charset_record : public rcs_record_t
   static const uint32_t _has_special_characters_field_pos = _alignment_field_pos + _alignment_field_width;
   static const uint32_t _has_special_characters_field_width = 1u;
 
-  static const uint32_t _length_field_pos = (_has_special_characters_field_pos +
-                                             _has_special_characters_field_width + 9u);
+  static const uint32_t _hash_field_pos = (_has_special_characters_field_pos +
+                                           _has_special_characters_field_width + 1u);
+  static const uint32_t _hash_field_width = 8u;
+
+  static const uint32_t _length_field_pos = _hash_field_pos + _hash_field_width;
   static const uint32_t _length_field_width = 16u;
 
   static const uint32_t _prev_field_pos = _length_field_pos + _length_field_width;
@@ -233,15 +247,7 @@ class lit_literal_storage_t : public rcs_recordset_t
 
 
   lit_charset_record *
-  create_charset_record (const ecma_char_t *s, size_t buf_size)
-  {
-    lit_charset_record *ret = alloc_record<lit_charset_record, size_t> (LIT_STR, buf_size);
-    ret->set_alignment_bytes_count (lit_charset_record::size (buf_size) -
-                                    (lit_charset_record::header_size () + buf_size));
-    ret->set_contains_long_characters (false); // FIXME: fix when unicode will be supported
-    ret->set_charset (s, buf_size);
-    return ret;
-  }
+  create_charset_record (const ecma_char_t *s, size_t buf_size);
 
   lit_magic_record *
   create_magic_record (ecma_magic_string_id_t id)
@@ -267,5 +273,9 @@ class lit_literal_storage_t : public rcs_recordset_t
   virtual void set_prev (rcs_record_t* rec_p, rcs_record_t *prev_rec_p);
   virtual size_t get_record_size (rcs_record_t* rec_p);
 };
+
+#define LIT_STR_T (lit_literal_storage_t::LIT_STR)
+#define LIT_MAGIC_STR_T (lit_literal_storage_t::LIT_MAGIC_STR)
+#define LIT_NUMBER_T (lit_literal_storage_t::LIT_NUMBER)
 
 #endif /* LIT_LITERAL_STORAGE_H */

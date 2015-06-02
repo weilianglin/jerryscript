@@ -15,7 +15,7 @@
 
 #include "lit-literal-storage.h"
 
-#include "ecma/base/ecma-helpers.h"
+#include "ecma-helpers.h"
 
 lit_literal_storage_t lit_storage;
 
@@ -43,13 +43,29 @@ void lit_charset_record::set_charset (const ecma_char_t *s, size_t size)
 
   rcs_record_iterator_t it ((rcs_recordset_t *)&lit_storage, (rcs_record_t *)this);
   it.skip (header_size ());
-  // FIXME: fix further string processing when unicode will be supported
-  ecma_length_t len = (ecma_length_t) (size / sizeof (ecma_char_t));
+  ecma_length_t len = get_length ();
   for (size_t i = 0; i < len; ++i)
   {
     it.write<ecma_char_t> (s[i]);
     it.skip<ecma_char_t> ();
   }
+}
+
+void lit_charset_record::get_charset (ecma_char_t *buff, size_t size)
+{
+  JERRY_ASSERT (size >= sizeof (ecma_char_t));
+
+  rcs_record_iterator_t it ((rcs_recordset_t *)&lit_storage, (rcs_record_t *)this);
+  it.skip (header_size ());
+  ecma_length_t len = get_length ();
+  size_t i;
+  for (i = 0; i < len && size > sizeof (ecma_char_t); ++i)
+  {
+    buff[i] = it.read<ecma_char_t> ();
+    it.skip<ecma_char_t> ();
+    size -= sizeof (ecma_char_t);
+  }
+  buff[i] = 0;
 }
 
 int lit_charset_record::compare_zt (const ecma_char_t *s2, size_t n)
@@ -143,12 +159,25 @@ bool lit_charset_record::equal_non_zt (const ecma_char_t *s, ecma_length_t len)
   return false;
 }
 
+lit_charset_record *
+lit_literal_storage_t::create_charset_record (const ecma_char_t *s, size_t buf_size)
+{
+  lit_charset_record *ret = alloc_record<lit_charset_record, size_t> (LIT_STR, buf_size);
+  ret->set_alignment_bytes_count (lit_charset_record::size (buf_size) -
+                                  (lit_charset_record::header_size () + buf_size));
+  ret->set_contains_long_characters (false); // FIXME: fix when unicode will be supported
+  ret->set_charset (s, buf_size);
+  ret->set_hash (ecma_chars_buffer_calc_hash_last_chars (s, ret->get_length ()));
+  return ret;
+}
+
 void lit_literal_storage_t::dump ()
 {
+  printf ("LITERALS:\n");
   for (rcs_record_t *rec_p = lit_storage.get_first (); rec_p != nullptr; rec_p = lit_storage.get_next (rec_p))
   {
-    printf ("[type=%d] ", rec_p->get_type ());
-    printf ("[size=%d] ", get_record_size (rec_p));
+    printf ("%p ", rec_p);
+    printf ("[%3d] ", get_record_size (rec_p));
     switch (rec_p->get_type ())
     {
       case LIT_STR:
@@ -161,26 +190,35 @@ void lit_literal_storage_t::dump ()
           printf ("%c", it.read<ecma_char_t> ());
           it.skip<ecma_char_t> ();
         }
+        printf (" : STRING");
         break;
       }
       case LIT_MAGIC_STR:
       {
         lit_magic_record *lit_p = static_cast<lit_magic_record *> (rec_p);
-        printf ("[id=%d] ", lit_p->get_magic_str_id ());
-        printf ("%s", ecma_get_magic_string_zt (lit_p->get_magic_str_id ()));
+        printf ("%s : MAGIC STRING", ecma_get_magic_string_zt (lit_p->get_magic_str_id ()));
+        printf (" [id=%d] ", lit_p->get_magic_str_id ());
         break;
       }
       case LIT_NUMBER:
       {
+
         lit_number_record *lit_p = static_cast<lit_number_record *> (rec_p);
-        ecma_char_t buff[ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER];
-        ecma_number_to_zt_string (lit_p->get_number (), buff, ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER);
-        printf ("%s", buff);
+        if (ecma_number_is_nan (lit_p->get_number ()))
+        {
+          printf ("%s : NUMBER", "NaN");
+        }
+        else
+        {
+          ecma_char_t buff[ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER];
+          ecma_number_to_zt_string (lit_p->get_number (), buff, ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER);
+          printf ("%s : NUMBER", buff);
+        }
         break;
       }
       default:
       {
-        /* empty */
+        printf (" : EMPTY RECORD");
       }
     }
 

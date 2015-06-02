@@ -14,14 +14,11 @@
  */
 
 #include "opcodes-dumper.h"
+
 #include "serializer.h"
-#include "jrt.h"
-#include "lexer.h"
 #include "stack.h"
 #include "syntax-errors.h"
-#include "jrt-libc-includes.h"
 #include "opcodes-native-call.h"
-#include "serializer.h"
 
 #define MIN_TEMP_NAME 128
 static idx_t temp_name, max_temp_name;
@@ -160,7 +157,7 @@ next_temp_name (void)
 }
 
 static op_meta
-create_op_meta (opcode_t op, literal_index_t lit_id1, literal_index_t lit_id2, literal_index_t lit_id3)
+create_op_meta (opcode_t op, lit_cpointer_t lit_id1, lit_cpointer_t lit_id2, lit_cpointer_t lit_id3)
 {
   op_meta ret;
 
@@ -179,43 +176,43 @@ create_op_meta_000 (opcode_t op)
 }
 
 static op_meta
-create_op_meta_001 (opcode_t op, literal_index_t lit_id)
+create_op_meta_001 (opcode_t op, lit_cpointer_t lit_id)
 {
   return create_op_meta (op, NOT_A_LITERAL, NOT_A_LITERAL, lit_id);
 }
 
 static op_meta
-create_op_meta_010 (opcode_t op, literal_index_t lit_id)
+create_op_meta_010 (opcode_t op, lit_cpointer_t lit_id)
 {
   return create_op_meta (op, NOT_A_LITERAL, lit_id, NOT_A_LITERAL);
 }
 
 static op_meta
-create_op_meta_011 (opcode_t op, literal_index_t lit_id2, literal_index_t lit_id3)
+create_op_meta_011 (opcode_t op, lit_cpointer_t lit_id2, lit_cpointer_t lit_id3)
 {
   return create_op_meta (op, NOT_A_LITERAL, lit_id2, lit_id3);
 }
 
 static op_meta
-create_op_meta_100 (opcode_t op, literal_index_t lit_id)
+create_op_meta_100 (opcode_t op, lit_cpointer_t lit_id)
 {
   return create_op_meta (op, lit_id, NOT_A_LITERAL, NOT_A_LITERAL);
 }
 
 static op_meta
-create_op_meta_101 (opcode_t op, literal_index_t lit_id1, literal_index_t lit_id3)
+create_op_meta_101 (opcode_t op, lit_cpointer_t lit_id1, lit_cpointer_t lit_id3)
 {
   return create_op_meta (op, lit_id1, NOT_A_LITERAL, lit_id3);
 }
 
 static op_meta
-create_op_meta_110 (opcode_t op, literal_index_t lit_id1, literal_index_t lit_id2)
+create_op_meta_110 (opcode_t op, lit_cpointer_t lit_id1, lit_cpointer_t lit_id2)
 {
   return create_op_meta (op, lit_id1, lit_id2, NOT_A_LITERAL);
 }
 
 static op_meta
-create_op_meta_111 (opcode_t op, literal_index_t lit_id1, literal_index_t lit_id2, literal_index_t lit_id3)
+create_op_meta_111 (opcode_t op, lit_cpointer_t lit_id1, lit_cpointer_t lit_id2, lit_cpointer_t lit_id3)
 {
   return create_op_meta (op, lit_id1, lit_id2, lit_id3);
 }
@@ -238,27 +235,27 @@ name_to_native_call_id (operand obj)
   {
     return OPCODE_NATIVE_CALL__COUNT;
   }
-  if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "LEDToggle"))
+  if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDToggle"))
   {
     return OPCODE_NATIVE_CALL_LED_TOGGLE;
   }
-  else if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "LEDOn"))
+  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDOn"))
   {
     return OPCODE_NATIVE_CALL_LED_ON;
   }
-  else if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "LEDOff"))
+  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDOff"))
   {
     return OPCODE_NATIVE_CALL_LED_OFF;
   }
-  else if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "LEDOnce"))
+  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDOnce"))
   {
     return OPCODE_NATIVE_CALL_LED_ONCE;
   }
-  else if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "wait"))
+  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "wait"))
   {
     return OPCODE_NATIVE_CALL_WAIT;
   }
-  else if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "print"))
+  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "print"))
   {
     return OPCODE_NATIVE_CALL_PRINT;
   }
@@ -638,11 +635,11 @@ dump_prop_setter_op_meta (op_meta last, operand op)
 }
 
 static operand
-create_operand_from_tmp_and_lit (idx_t tmp, literal_index_t lit_id)
+create_operand_from_tmp_and_lit (idx_t tmp, lit_cpointer_t lit_id)
 {
   if (tmp != LITERAL_TO_REWRITE)
   {
-    JERRY_ASSERT (lit_id == NOT_A_LITERAL);
+    JERRY_ASSERT (lit_id.packed_value == MEM_CP_NULL);
 
     operand ret;
 
@@ -653,7 +650,7 @@ create_operand_from_tmp_and_lit (idx_t tmp, literal_index_t lit_id)
   }
   else
   {
-    JERRY_ASSERT (lit_id != NOT_A_LITERAL);
+    JERRY_ASSERT (lit_id.packed_value != MEM_CP_NULL);
 
     operand ret;
 
@@ -712,12 +709,12 @@ empty_operand (void)
 }
 
 operand
-literal_operand (literal_index_t lit_id)
+literal_operand (lit_cpointer_t lit_cp)
 {
   operand ret;
 
   ret.type = OPERAND_LITERAL;
-  ret.data.lit_id = lit_id;
+  ret.data.lit_id = lit_cp;
 
   return ret;
 }
@@ -757,7 +754,7 @@ dumper_is_intrinsic (operand obj)
 {
   if (obj.type == OPERAND_LITERAL)
   {
-    if (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "assert"))
+    if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "assert"))
     {
       return true;
     }
@@ -770,7 +767,7 @@ dump_intrinsic (operand obj, operand arg)
 {
   JERRY_ASSERT (obj.type == OPERAND_LITERAL);
   TODO (/* Rewrite when there will be more intrinsics.  */)
-  JERRY_ASSERT (literal_equal_type_s (lexer_get_literal_by_id (obj.data.lit_id), "assert"));
+  JERRY_ASSERT (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "assert"));
   dump_assert (arg);
   return dump_undefined_assignment_res ();
 }
@@ -810,7 +807,7 @@ dump_boolean_assignment_res (bool is_true)
 }
 
 void
-dump_string_assignment (operand op, literal_index_t lit_id)
+dump_string_assignment (operand op, lit_cpointer_t lit_id)
 {
   switch (op.type)
   {
@@ -830,7 +827,7 @@ dump_string_assignment (operand op, literal_index_t lit_id)
 }
 
 operand
-dump_string_assignment_res (literal_index_t lit_id)
+dump_string_assignment_res (lit_cpointer_t lit_id)
 {
   operand op = tmp_operand ();
   dump_string_assignment (op, lit_id);
@@ -838,7 +835,7 @@ dump_string_assignment_res (literal_index_t lit_id)
 }
 
 void
-dump_number_assignment (operand op, literal_index_t lit_id)
+dump_number_assignment (operand op, lit_cpointer_t lit_id)
 {
   switch (op.type)
   {
@@ -858,7 +855,7 @@ dump_number_assignment (operand op, literal_index_t lit_id)
 }
 
 operand
-dump_number_assignment_res (literal_index_t lit_id)
+dump_number_assignment_res (lit_cpointer_t lit_id)
 {
   operand op = tmp_operand ();
   dump_number_assignment (op, lit_id);
@@ -1121,15 +1118,15 @@ void
 dump_prop_name_and_value (operand name, operand value)
 {
   JERRY_ASSERT (name.type == OPERAND_LITERAL);
-  const literal lit = lexer_get_literal_by_id (name.data.lit_id);
+  literal_t lit = lit_get_literal_by_cp (name.data.lit_id);
   operand tmp;
-  if (lit.type == LIT_STR || lit.type == LIT_MAGIC_STR)
+  if (lit->get_type () == LIT_STR_T || lit->get_type ()  == LIT_MAGIC_STR_T)
   {
     tmp = dump_string_assignment_res (name.data.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit.type == LIT_NUMBER);
+    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
     tmp = dump_number_assignment_res (name.data.lit_id);
   }
   switch (value.type)
@@ -1154,15 +1151,15 @@ dump_prop_getter_decl (operand name, operand func)
 {
   JERRY_ASSERT (name.type == OPERAND_LITERAL);
   JERRY_ASSERT (func.type == OPERAND_TMP);
-  const literal lit = lexer_get_literal_by_id (name.data.lit_id);
+  literal_t lit = lit_get_literal_by_cp (name.data.lit_id);
   operand tmp;
-  if (lit.type == LIT_STR || lit.type == LIT_MAGIC_STR)
+  if (lit->get_type () == LIT_STR_T || lit->get_type () == LIT_MAGIC_STR_T)
   {
     tmp = dump_string_assignment_res (name.data.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit.type == LIT_NUMBER);
+    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
     tmp = dump_number_assignment_res (name.data.lit_id);
   }
   const opcode_t opcode = getop_meta (OPCODE_META_TYPE_VARG_PROP_GETTER, tmp.data.uid, func.data.uid);
@@ -1174,15 +1171,15 @@ dump_prop_setter_decl (operand name, operand func)
 {
   JERRY_ASSERT (name.type == OPERAND_LITERAL);
   JERRY_ASSERT (func.type == OPERAND_TMP);
-  const literal lit = lexer_get_literal_by_id (name.data.lit_id);
+  literal_t lit = lit_get_literal_by_cp (name.data.lit_id);
   operand tmp;
-  if (lit.type == LIT_STR || lit.type == LIT_MAGIC_STR)
+  if (lit->get_type () == LIT_STR_T || lit->get_type () == LIT_MAGIC_STR_T)
   {
     tmp = dump_string_assignment_res (name.data.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit.type == LIT_NUMBER);
+    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
     tmp = dump_number_assignment_res (name.data.lit_id);
   }
   const opcode_t opcode = getop_meta (OPCODE_META_TYPE_VARG_PROP_SETTER, tmp.data.uid, func.data.uid);
@@ -1371,8 +1368,8 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
   {
     case OPERAND_LITERAL:
     {
-      const literal lit = lexer_get_literal_by_id (op.data.lit_id);
-      if (lit.type == LIT_MAGIC_STR || lit.type == LIT_STR)
+      literal_t lit = lit_get_literal_by_cp (op.data.lit_id);
+      if (lit->get_type () == LIT_MAGIC_STR_T || lit->get_type ()  == LIT_STR_T)
       {
         syntax_check_delete (is_strict, loc);
         switch (res.type)
@@ -1392,7 +1389,7 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
         }
         break;
       }
-      else if (lit.type == LIT_NUMBER)
+      else if (lit->get_type ()  == LIT_NUMBER_T)
       {
         dump_boolean_assignment (res, true);
       }
@@ -2358,7 +2355,7 @@ dump_throw (operand op)
 }
 
 bool
-dumper_variable_declaration_exists (literal_index_t lit_id)
+dumper_variable_declaration_exists (lit_cpointer_t lit_id)
 {
   for (opcode_counter_t oc = (opcode_counter_t) (serializer_get_current_opcode_counter () - 1);
        oc > 0; oc--)
@@ -2368,7 +2365,7 @@ dumper_variable_declaration_exists (literal_index_t lit_id)
     {
       break;
     }
-    if (var_decl_op_meta.lit_id[0] == lit_id)
+    if (var_decl_op_meta.lit_id[0].packed_value == lit_id.packed_value)
     {
       return true;
     }
@@ -2377,7 +2374,7 @@ dumper_variable_declaration_exists (literal_index_t lit_id)
 }
 
 void
-dump_variable_declaration (literal_index_t lit_id)
+dump_variable_declaration (lit_cpointer_t lit_id)
 {
   const opcode_t opcode = getop_var_decl (LITERAL_TO_REWRITE);
   serializer_dump_op_meta (create_op_meta_100 (opcode, lit_id));

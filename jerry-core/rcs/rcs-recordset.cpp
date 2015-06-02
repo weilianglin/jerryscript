@@ -91,7 +91,6 @@ rcs_recordset_t::record_t::cpointer_t::decompress (rcs_cpointer_t compressed_poi
                                                                                        *   compressed pointer */
 {
   uint8_t* base_pointer;
-
   if (compressed_pointer.value.base_cp == MEM_CP_NULL)
   {
     base_pointer = NULL;
@@ -105,6 +104,15 @@ rcs_recordset_t::record_t::cpointer_t::decompress (rcs_cpointer_t compressed_poi
 
   return (rcs_recordset_t::record_t*) (base_pointer + diff);
 } /* rcs_recordset_t::record_t::cpointer_t::decompress */
+
+
+rcs_cpointer_t
+rcs_recordset_t::record_t::cpointer_t::null_cp ()
+{
+  rcs_cpointer_t cp;
+  cp.packed_value = MEM_CP_NULL;
+  return cp;
+}
 
 /**
  * Assert that 'this' value points to correct record

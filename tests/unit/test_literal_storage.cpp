@@ -53,7 +53,7 @@ main (int __attr_unused___ argc,
     "setUTCSeconds",
   };
 
-  lit_storage.init ();
+  lit_init ();
 
   lit_create_literal_from_num (3.15);
   for (size_t i = 0; i < sizeof (strings) / sizeof (const char *); ++i)
@@ -83,8 +83,12 @@ main (int __attr_unused___ argc,
                                     (ecma_length_t) ecma_zt_string_length (ecma_get_magic_string_zt (msi))));
   }
 
-  lit_storage.cleanup ();
-  lit_storage.finalize ();
+  // Test compare
+  const char *s = "abcde";
+  literal_t l1 = lit_create_literal_from_s (s, (ecma_length_t) strlen (s));
+  assert (lit_literal_equal_s (l1, s));
+
+  lit_finalize ();
   mem_finalize (true);
   return 0;
 }

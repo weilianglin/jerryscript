@@ -22,10 +22,8 @@
 
 #include "ecma-alloc.h"
 #include "ecma-gc.h"
-#include "ecma-globals.h"
 #include "ecma-helpers.h"
 #include "ecma-lcache.h"
-#include "jrt-bit-fields.h"
 
 /**
  * Create an object with specified prototype object

@@ -93,6 +93,7 @@ project (JerryCore CXX C ASM)
 # Include directories
  set(INCLUDE_CORE
      ${CMAKE_SOURCE_DIR}/jerry-core
+     ${CMAKE_SOURCE_DIR}/jerry-core/lit
      ${CMAKE_SOURCE_DIR}/jerry-core/rcs
      ${CMAKE_SOURCE_DIR}/jerry-core/mem
      ${CMAKE_SOURCE_DIR}/jerry-core/vm

@@ -15,11 +15,7 @@
 
 #include "serializer.h"
 #include "bytecode-data.h"
-#include "jrt.h"
-#include "parser.h"
-#include "jrt-libc-includes.h"
 #include "pretty-printer.h"
-#include "lit/lit-literal-storage.h"
 
 static bytecode_data_t bytecode_data;
 static scopes_tree current_scope;
@@ -44,16 +40,8 @@ serializer_get_opcode (opcode_counter_t oc)
   return bytecode_data.opcodes[oc];
 }
 
-literal
-serializer_get_literal_by_id (literal_index_t id)
-{
-  JERRY_ASSERT (id != INVALID_LITERAL);
-  JERRY_ASSERT (id < bytecode_data.literals_count);
-  return bytecode_data.literals[id];
-}
-
-literal_index_t
-serializer_get_literal_id_by_uid (uint8_t id, opcode_counter_t oc)
+lit_cpointer_t
+serializer_get_literal_cp_by_uid (uint8_t id, opcode_counter_t oc)
 {
   if (bytecode_data.lit_id_hash == null_hash)
   {
@@ -92,17 +80,14 @@ serializer_merge_scopes_into_bytecode (void)
 }
 
 void
-serializer_dump_literals (const literal *literals, literal_index_t literals_count)
+serializer_dump_literals ()
 {
 #ifdef JERRY_ENABLE_PRETTY_PRINTER
   if (print_opcodes)
   {
-    pp_literals (literals, literals_count);
+    lit_dump_literals ();
   }
 #endif
-
-  bytecode_data.literals_count = literals_count;
-  bytecode_data.literals = literals;
 }
 
 void
@@ -186,11 +171,10 @@ serializer_init ()
   print_opcodes = false;
 
   bytecode_data.strings_buffer = NULL;
-  bytecode_data.literals = NULL;
   bytecode_data.opcodes = NULL;
   bytecode_data.lit_id_hash = null_hash;
 
-  lit_storage.init ();
+  lit_init ();
 }
 
 void serializer_set_show_opcodes (bool show_opcodes)
@@ -209,11 +193,8 @@ serializer_free (void)
   {
     lit_id_hash_table_free (bytecode_data.lit_id_hash);
   }
-  if (bytecode_data.literals != NULL)
-  {
-    mem_heap_free_block ((uint8_t *) bytecode_data.literals);
-  }
+
   mem_heap_free_block ((uint8_t *) bytecode_data.opcodes);
 
-  lit_storage.finalize ();
+  lit_finalize ();
 }

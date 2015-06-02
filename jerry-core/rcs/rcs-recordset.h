@@ -117,6 +117,10 @@ class rcs_recordset_t
 
       static cpointer_t compress (record_t* pointer_p);
       static record_t* decompress (cpointer_t pointer_cp);
+
+      static cpointer_t null_cp ();
+
+      static const int conval = 3;
     };
 
    private:
