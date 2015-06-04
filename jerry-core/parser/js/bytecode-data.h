@@ -35,7 +35,7 @@
  */
 #define BLOCK_SIZE 64
 
-typedef struct
+typedef struct __attribute__ ((aligned (MEM_ALIGNMENT)))
 {
   lit_id_hash_table *lit_id_hash;
 } opcodes_header_t;
