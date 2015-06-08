@@ -13,12 +13,8 @@
  * limitations under the License.
  */
 
-#include <assert.h>
-
-#include "ecma/base/ecma-helpers.h"
-#include "jrt/jrt.h"
-#include "mem-allocator.h"
-#include "lit/lit-literal.h"
+#include "ecma-helpers.h"
+#include "lit-literal.h"
 
 extern "C"
 {
@@ -58,7 +54,7 @@ main (int __attr_unused___ argc,
   lit_create_literal_from_num (3.15);
   for (size_t i = 0; i < sizeof (strings) / sizeof (const char *); ++i)
   {
-    lit_create_literal_from_s (strings[i], (ecma_length_t) strlen (strings[i]));
+    lit_create_literal_from_charset ((const ecma_char_t *) strings[i], (ecma_length_t) strlen (strings[i]));
   }
   lit_create_literal_from_num (32342.3444);
 
@@ -66,27 +62,27 @@ main (int __attr_unused___ argc,
        msi < ECMA_MAGIC_STRING__COUNT;
        msi = (ecma_magic_string_id_t) (msi + 1))
   {
-    lit_create_literal_from_zt (ecma_get_magic_string_zt (msi),
-                                (ecma_length_t) ecma_zt_string_length (ecma_get_magic_string_zt (msi)));
+    lit_create_literal_from_charset (ecma_get_magic_string_zt (msi),
+                                     (ecma_length_t) ecma_zt_string_length (ecma_get_magic_string_zt (msi)));
   }
 
   for (size_t i = 0; i < sizeof (strings) / sizeof (const char *); ++i)
   {
-    assert (lit_find_literal_by_s (strings[i], (ecma_length_t) strlen (strings[i])));
+    JERRY_ASSERT (lit_find_literal_by_charset ((const ecma_char_t *) strings[i], (ecma_length_t) strlen (strings[i])));
   }
 
   for (ecma_magic_string_id_t msi = (ecma_magic_string_id_t) 0;
        msi < ECMA_MAGIC_STRING__COUNT;
        msi = (ecma_magic_string_id_t) (msi + 1))
   {
-    assert (lit_find_literal_by_zt (ecma_get_magic_string_zt (msi),
-                                    (ecma_length_t) ecma_zt_string_length (ecma_get_magic_string_zt (msi))));
+    JERRY_ASSERT (lit_find_literal_by_charset (ecma_get_magic_string_zt (msi),
+                                               (ecma_length_t) ecma_zt_string_length (ecma_get_magic_string_zt (msi))));
   }
 
   // Test compare
   const char *s = "abcde";
-  literal_t l1 = lit_create_literal_from_s (s, (ecma_length_t) strlen (s));
-  assert (lit_literal_equal_s (l1, s));
+  literal_t l1 = lit_create_literal_from_charset ((const ecma_char_t *) s, (ecma_length_t) strlen (s));
+  JERRY_ASSERT (lit_literal_equal_zt (l1, (const ecma_char_t *) s));
 
   lit_finalize ();
   mem_finalize (true);

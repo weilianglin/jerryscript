@@ -57,7 +57,7 @@ static const char *
 lit_cp_to_str (lit_cpointer_t cp)
 {
   literal_t lit = lit_get_literal_by_cp (cp);
-  return lit_literal_to_s_internal_buff (lit);
+  return lit_literal_to_str_internal_buf (lit);
 }
 
 static const char *

@@ -36,7 +36,7 @@
  */
 class rcs_chunked_list_t
 {
- public:
+public:
   rcs_chunked_list_t ()
   {
     head_p = tail_p = NULL;
@@ -71,7 +71,7 @@ class rcs_chunked_list_t
 
   static size_t get_data_space_size (void);
 
- private:
+private:
   void set_prev (node_t *node_p, node_t *prev_node_p);
   void set_next (node_t *node_p, node_t *next_node_p);
 

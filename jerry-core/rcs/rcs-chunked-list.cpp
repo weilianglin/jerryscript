@@ -42,7 +42,7 @@ rcs_chunked_list_t::cleanup (void)
   {
     remove (head_p);
   }
-} /* rcs_chunked_list_t::free */
+} /* rcs_chunked_list_t::cleanup */
 
 /**
  * Get first node of the list

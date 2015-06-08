@@ -313,7 +313,7 @@ ecma_init_ecma_string_from_lit_cp (ecma_string_t *string_p, /**< descriptor to i
   if (lit->get_type () == LIT_MAGIC_STR_T)
   {
     ecma_init_ecma_string_from_magic_string_id (string_p,
-                                                static_cast<lit_magic_record *>(lit)->get_magic_str_id (),
+                                                static_cast<lit_magic_record_t *>(lit)->get_magic_str_id (),
                                                 is_stack_var);
 
     return;
@@ -324,7 +324,7 @@ ecma_init_ecma_string_from_lit_cp (ecma_string_t *string_p, /**< descriptor to i
   string_p->refs = 1;
   string_p->is_stack_var = (is_stack_var != 0);
   string_p->container = ECMA_STRING_CONTAINER_LIT_TABLE;
-  string_p->hash = static_cast<lit_charset_record *>(lit)->get_hash ();
+  string_p->hash = static_cast<lit_charset_record_t *>(lit)->get_hash ();
 
   string_p->u.common_field = 0;
   string_p->u.lit_cp = lit_cp;
@@ -911,7 +911,7 @@ ecma_string_to_zt_string (const ecma_string_t *string_desc_p, /**< ecma-string d
     {
       literal_t lit = lit_get_literal_by_cp (string_desc_p->u.lit_cp);
       JERRY_ASSERT (lit->get_type () == LIT_STR_T);
-      lit_literal_to_zt (lit, buffer_p, (size_t) required_buffer_size);
+      lit_literal_to_charset (lit, buffer_p, (size_t) required_buffer_size);
       break;
     }
     case ECMA_STRING_CONTAINER_UINT32_IN_DESC:
@@ -1272,7 +1272,7 @@ ecma_string_get_length (const ecma_string_t *string_p) /**< ecma-string */
   {
     literal_t lit = lit_get_literal_by_cp (string_p->u.lit_cp);
     JERRY_ASSERT (lit->get_type () == LIT_STR_T);
-    return static_cast<lit_charset_record *> (lit)->get_length ();
+    return static_cast<lit_charset_record_t *> (lit)->get_length ();
   }
   else if (container == ECMA_STRING_CONTAINER_MAGIC_STRING)
   {
@@ -1390,52 +1390,6 @@ ecma_compare_zt_strings (const ecma_char_t *string1_p, /**< zero-terminated stri
 
   return (*iter_2_p == ECMA_CHAR_NULL);
 } /* ecma_compare_zt_strings */
-
-/**
- * Compare non-zero-terminated string to zero-terminated string
- *
- * @return  true - if strings are equal;
- *          false - otherwise.
- */
-bool ecma_compare_non_zt_to_zt_string (const ecma_char_t *string1_p,
-                                       ecma_length_t len1,
-                                       const ecma_char_t *string2_p)
-{
-  return ecma_compare_non_zt_strings (string1_p, len1, string2_p,
-           ecma_zt_string_length (string2_p));
-} /* ecma_compare_non_zt_to_zt_string */
-
-/**
- * Compare non-zero-terminated string to non-zero-terminated string
- *
- * @return  true - if strings are equal;
- *          false - otherwise.
- */
-bool
-ecma_compare_non_zt_strings (const ecma_char_t *string1_p, /**< zero-terminated string */
-                             ecma_length_t len1,
-                             const ecma_char_t *string2_p,
-                             ecma_length_t len2)          /**< zero-terminated string */
-{
-  const ecma_char_t *iter_1_p = string1_p;
-  const ecma_char_t *iter_2_p = string2_p;
-
-  ecma_length_t len = JERRY_MIN (len1, len2);
-  while (len--)
-  {
-    if (*iter_1_p++ != *iter_2_p++)
-    {
-      return false;
-    }
-  }
-
-  if (len1 == len2)
-  {
-    return true;
-  }
-
-  return false;
-} /* ecma_compare_non_zt_strings */
 
 /**
  * Relational compare of zero-terminated strings

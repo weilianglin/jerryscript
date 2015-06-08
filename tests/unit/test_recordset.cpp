@@ -48,7 +48,7 @@ extern "C"
 
 class test_rcs_record_type_one_t : public rcs_record_t
 {
- public:
+public:
   static size_t size (uint32_t elements_count)
   {
     return JERRY_ALIGNUP (header_size + element_size * elements_count,
@@ -77,7 +77,7 @@ class test_rcs_record_type_one_t : public rcs_record_t
     set_pointer (prev_field_pos, prev_field_width, prev_rec_p);
   }
 
- private:
+private:
   static const uint32_t length_field_pos = _fields_offset_begin;
   static const uint32_t length_field_width = 12u;
 
@@ -90,7 +90,7 @@ class test_rcs_record_type_one_t : public rcs_record_t
 
 class test_rcs_record_type_two_t : public rcs_record_t
 {
- public:
+public:
   static size_t size (void)
   {
     return JERRY_ALIGNUP (header_size, RCS_DYN_STORAGE_LENGTH_UNIT);
@@ -116,7 +116,7 @@ class test_rcs_record_type_two_t : public rcs_record_t
     set_pointer (prev_field_pos, prev_field_width, prev_rec_p);
   }
 
- private:
+private:
   static const uint32_t prev_field_pos = _fields_offset_begin;
   static const uint32_t prev_field_width = rcs_cpointer_t::bit_field_width;
 
@@ -125,7 +125,7 @@ class test_rcs_record_type_two_t : public rcs_record_t
 
 class test_rcs_recordset_t : public rcs_recordset_t
 {
- public:
+public:
   test_rcs_record_type_one_t*
   create_record_type_one (uint32_t elements_count)
   {
@@ -150,7 +150,7 @@ class test_rcs_recordset_t : public rcs_recordset_t
   {
     free_record (rec_p);
   }
- private:
+private:
   static const int _record_type_one_id  = _first_type_id + 0;
   static const int _record_type_two_id  = _first_type_id + 1;
 

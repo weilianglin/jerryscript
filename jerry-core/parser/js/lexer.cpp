@@ -118,14 +118,14 @@ convert_string_to_token (token_type tt, /**< token type */
 {
   JERRY_ASSERT (str_p != NULL);
 
-  literal_t lit = lit_find_literal_by_zt (str_p, length);
+  literal_t lit = lit_find_literal_by_charset (str_p, length);
   if (lit != NULL)
   {
     return create_token_from_lit (tt, lit);
   }
 
 
-  lit = lit_create_literal_from_zt (str_p, length);
+  lit = lit_create_literal_from_charset (str_p, length);
   JERRY_ASSERT (lit->get_type () == LIT_STR_T || lit->get_type () == LIT_MAGIC_STR_T);
 
   return create_token_from_lit (tt, lit);

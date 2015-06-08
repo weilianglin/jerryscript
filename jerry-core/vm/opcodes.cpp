@@ -13,12 +13,9 @@
  * limitations under the License.
  */
 
-#include <lit/lit-literal-storage.h>
 #include "jrt.h"
 #include "opcodes.h"
 #include "opcodes-ecma-support.h"
-#include "serializer.h"
-#include "vm.h"
 
 /**
  * Note:
@@ -132,7 +129,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
     literal_t lit = lit_get_literal_by_cp (lit_cp);
     JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
 
-    *num_p = static_cast<lit_number_record *> (lit)->get_number ();
+    *num_p = static_cast<lit_number_record_t *> (lit)->get_number ();
 
     ret_value = set_variable_value (int_data,
                                     int_data->pos,
@@ -147,7 +144,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
     literal_t lit = lit_get_literal_by_cp (lit_cp);
     JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
 
-    *num_p = static_cast<lit_number_record *> (lit)->get_number ();
+    *num_p = static_cast<lit_number_record_t *> (lit)->get_number ();
 
     ret_value = set_variable_value (int_data,
                                     int_data->pos,

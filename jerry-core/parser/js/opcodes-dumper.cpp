@@ -235,27 +235,27 @@ name_to_native_call_id (operand obj)
   {
     return OPCODE_NATIVE_CALL__COUNT;
   }
-  if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDToggle"))
+  if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "LEDToggle"))
   {
     return OPCODE_NATIVE_CALL_LED_TOGGLE;
   }
-  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDOn"))
+  else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "LEDOn"))
   {
     return OPCODE_NATIVE_CALL_LED_ON;
   }
-  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDOff"))
+  else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "LEDOff"))
   {
     return OPCODE_NATIVE_CALL_LED_OFF;
   }
-  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "LEDOnce"))
+  else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "LEDOnce"))
   {
     return OPCODE_NATIVE_CALL_LED_ONCE;
   }
-  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "wait"))
+  else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "wait"))
   {
     return OPCODE_NATIVE_CALL_WAIT;
   }
-  else if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "print"))
+  else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "print"))
   {
     return OPCODE_NATIVE_CALL_PRINT;
   }
@@ -754,7 +754,7 @@ dumper_is_intrinsic (operand obj)
 {
   if (obj.type == OPERAND_LITERAL)
   {
-    if (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "assert"))
+    if (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "assert"))
     {
       return true;
     }
@@ -767,7 +767,7 @@ dump_intrinsic (operand obj, operand arg)
 {
   JERRY_ASSERT (obj.type == OPERAND_LITERAL);
   TODO (/* Rewrite when there will be more intrinsics.  */)
-  JERRY_ASSERT (lit_literal_equal_type_s (lit_get_literal_by_cp (obj.data.lit_id), "assert"));
+  JERRY_ASSERT (lit_literal_equal_type_zt (lit_get_literal_by_cp (obj.data.lit_id), (const ecma_char_t *) "assert"));
   dump_assert (arg);
   return dump_undefined_assignment_res ();
 }

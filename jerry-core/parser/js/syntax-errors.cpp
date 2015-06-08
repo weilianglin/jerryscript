@@ -97,28 +97,28 @@ syntax_check_for_duplication_of_prop_names (bool is_strict, locus loc __attr_unu
         if (is_strict && previous.type == PROP_DATA && current.type == PROP_DATA)
         {
           PARSE_ERROR_VARG ("Duplication of parameter name '%s' in ObjectDeclaration is not allowed in strict mode",
-                            loc, lit_literal_to_s_internal_buff (current.lit));
+                            loc, lit_literal_to_str_internal_buf (current.lit));
         }
         /*b*/
         if (previous.type == PROP_DATA
             && (current.type == PROP_SET || current.type == PROP_GET))
         {
           PARSE_ERROR_VARG ("Parameter name '%s' in ObjectDeclaration may not be both data and accessor",
-                            loc, lit_literal_to_s_internal_buff (current.lit));
+                            loc, lit_literal_to_str_internal_buf (current.lit));
         }
         /*c*/
         if (current.type == PROP_DATA
             && (previous.type == PROP_SET || previous.type == PROP_GET))
         {
           PARSE_ERROR_VARG ("Parameter name '%s' in ObjectDeclaration may not be both data and accessor",
-                            loc, lit_literal_to_s_internal_buff (current.lit));
+                            loc, lit_literal_to_str_internal_buf (current.lit));
         }
         /*d*/
         if ((previous.type == PROP_SET && current.type == PROP_SET)
             || (previous.type == PROP_GET && current.type == PROP_GET))
         {
           PARSE_ERROR_VARG ("Parameter name '%s' in ObjectDeclaration may not be accessor of same type",
-                            loc, lit_literal_to_s_internal_buff (current.lit));
+                            loc, lit_literal_to_str_internal_buf (current.lit));
         }
       }
     }
@@ -186,7 +186,7 @@ syntax_check_for_syntax_errors_in_formal_param_list (bool is_strict, locus loc _
       if (lit_literal_equal_type (previous, current))
       {
         PARSE_ERROR_VARG ("Duplication of literal '%s' in FormalParameterList is not allowed in strict mode",
-                          loc, lit_literal_to_s_internal_buff (previous));
+                          loc, lit_literal_to_str_internal_buf (previous));
       }
     }
   }

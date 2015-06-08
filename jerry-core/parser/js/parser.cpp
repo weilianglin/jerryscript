@@ -240,7 +240,7 @@ parse_property_name (void)
     case TOK_KEYWORD:
     {
       const char *s = lexer_keyword_to_string ((keyword) token_data ());
-      literal_t lit = lit_find_or_create_literal_from_s (s, (ecma_length_t) strlen (s));
+      literal_t lit = lit_find_or_create_literal_from_charset ((const ecma_char_t *) s, (ecma_length_t) strlen (s));
       return literal_operand (lit_cpointer_t::compress (lit));
     }
     default:
@@ -278,11 +278,11 @@ parse_property_assignment (void)
   {
     bool is_setter;
 
-    if (lit_literal_equal_type_s (lit_get_literal_by_cp (token_data_as_lit_cp ()), "get"))
+    if (lit_literal_equal_type_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()), (const ecma_char_t *) "get"))
     {
       is_setter = false;
     }
-    else if (lit_literal_equal_type_s (lit_get_literal_by_cp (token_data_as_lit_cp ()), "set"))
+    else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()), (const ecma_char_t *) "set"))
     {
       is_setter = true;
     }
@@ -753,7 +753,7 @@ parse_member_expression (operand *this_arg, operand *prop_gl)
       else if (token_is (TOK_KEYWORD))
       {
         const char *s = lexer_keyword_to_string ((keyword) token_data ());
-        literal_t lit = lit_find_literal_by_s (s, (ecma_length_t) strlen (s));
+        literal_t lit = lit_find_literal_by_charset ((const ecma_char_t *) s, (ecma_length_t) strlen (s));
         if (lit == NULL)
         {
           EMIT_ERROR ("Expected identifier");
@@ -2478,7 +2478,7 @@ static void process_keyword_names ()
     if (token_is (TOK_COLON))
     {
       const char *s = lexer_keyword_to_string (kw);
-      lit_find_or_create_literal_from_s (s, (ecma_length_t) strlen (s));
+      lit_find_or_create_literal_from_charset ((const ecma_char_t *) s, (ecma_length_t) strlen (s));
     }
     else
     {
@@ -2487,8 +2487,8 @@ static void process_keyword_names ()
   }
   else if (token_is (TOK_NAME))
   {
-    if (lit_literal_equal_type_s (lit_get_literal_by_cp (token_data_as_lit_cp ()), "get")
-        || lit_literal_equal_type_s (lit_get_literal_by_cp (token_data_as_lit_cp ()), "set"))
+    if (lit_literal_equal_type_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()), (const ecma_char_t *) "get")
+        || lit_literal_equal_type_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()), (const ecma_char_t *) "set"))
     {
       skip_newlines ();
       if (token_is (TOK_KEYWORD))
@@ -2498,7 +2498,7 @@ static void process_keyword_names ()
         if (token_is (TOK_OPEN_PAREN))
         {
           const char *s = lexer_keyword_to_string (kw);
-          lit_find_or_create_literal_from_s (s, (ecma_length_t) strlen (s));
+          lit_find_or_create_literal_from_charset ((const ecma_char_t *) s, (ecma_length_t) strlen (s));
         }
         else
         {
@@ -2659,7 +2659,8 @@ preparse_scope (bool is_global)
   bool is_ref_eval_identifier = false;
   bool is_use_strict = false;
 
-  if (token_is (TOK_STRING) && lit_literal_equal_s (lit_get_literal_by_cp (token_data_as_lit_cp ()), "use strict"))
+  if (token_is (TOK_STRING) && lit_literal_equal_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()),
+                                                     (const ecma_char_t *) "use strict"))
   {
     scopes_tree_set_strict_mode (STACK_TOP (scopes), true);
     is_use_strict = true;
@@ -2696,14 +2697,13 @@ preparse_scope (bool is_global)
     {
       if (token_is (TOK_NAME))
       {
-        if (lit_literal_equal_type_s (lit_get_literal_by_cp (token_data_as_lit_cp ()),
-                                      "arguments"))
+        if (lit_literal_equal_type_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()),
+                                       (const ecma_char_t *) "arguments"))
         {
           is_ref_arguments_identifier = true;
         }
-
-        if (lit_literal_equal_type_s (lit_get_literal_by_cp (token_data_as_lit_cp ()),
-                                      "eval"))
+        else if (lit_literal_equal_type_zt (lit_get_literal_by_cp (token_data_as_lit_cp ()),
+                                            (const ecma_char_t *) "eval"))
         {
           is_ref_eval_identifier = true;
         }

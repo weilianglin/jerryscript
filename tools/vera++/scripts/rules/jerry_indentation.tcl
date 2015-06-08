@@ -65,8 +65,8 @@ foreach fileName [getSourceFileNames] {
                         set real_indent [string length $match]
                         if {$indent != $real_indent} {
                             if {[regexp {^[[:blank:]]*(private:|public:|protected:)} $line]} {
-                                if {$indent != $real_indent + 1} {
-                                    set exp_indent [expr  {$indent - 1}]
+                                if {$indent != $real_indent + 2} {
+                                    set exp_indent [expr  {$indent - 2}]
                                     report $fileName $lineNumber "Indentation: $real_indent -> $exp_indent. Line: '$line'"
                                 }
                             } elseif {![regexp {^[[:alnum:]_]{1,}:$} $line] || $real_indent != 0} {

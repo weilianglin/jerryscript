@@ -16,19 +16,21 @@
 #ifndef LIT_LITERAL_STORAGE_H
 #define LIT_LITERAL_STORAGE_H
 
-#include "ecma/base/ecma-globals.h"
+#include "ecma-globals.h"
 
 class lit_literal_storage_t;
 extern lit_literal_storage_t lit_storage;
 
 /**
+ * Charset record
+ *
  * layout:
  * ------- header -----------------------
  * type (4 bits)
  * alignment (2 bits)
- * contains_long_characters_flag (1 bit)
- * unused (1 bit)
+ * unused (2 bits)
  * hash (8 bits)
+ * length (16 bits)
  * pointer to prev (16 bits)
  * ------- characters -------------------
  * ...
@@ -39,205 +41,371 @@ extern lit_literal_storage_t lit_storage;
  * by 'alignment' field in header)
  * --------------------------------------
  */
-class lit_charset_record : public rcs_record_t
+class lit_charset_record_t : public rcs_record_t
 {
- public:
-  static size_t size (size_t size)
+  friend class rcs_recordset_t;
+  friend class lit_literal_storage_t;
+
+public:
+  /**
+   * Calculate the size that record will occupy inside the storage
+   *
+   * @return size of the record in bytes
+   */
+  static size_t
+  size (size_t size) /**< size of the charset buffer */
   {
     return JERRY_ALIGNUP (size + header_size (), RCS_DYN_STORAGE_LENGTH_UNIT);
-  }
+  } /* size */
 
-  static size_t header_size ()
+  /**
+   * Get the size of the header part of the record
+   *
+   * @return size of the header in bytes
+   */
+  static size_t
+  header_size ()
   {
     return _header_size;
-  }
+  } /* header_size */
 
-  size_t get_alignment_bytes_count () const
+  /**
+   * Get the count of the alignment bytes at the end of record.
+   * These bytes are needed to align the record to RCS_DYN_STORAGE_ALIGNMENT.
+   *
+   * @return alignment bytes count (the value of the 'alignment' field in the header)
+   */
+  size_t
+  get_alignment_bytes_count () const
   {
     return get_field (_alignment_field_pos, _alignment_field_width);
-  }
+  } /* get_alignment_bytes_count */
 
-  void set_alignment_bytes_count (size_t count)
+  /**
+   * Set the count of the alignment bytes at the end of record (the value of the 'alignment' field in the header)
+   */
+  void
+  set_alignment_bytes_count (size_t count) /**< count of the alignment bytes */
   {
     JERRY_ASSERT (count <= RCS_DYN_STORAGE_ALIGNMENT);
     set_field (_alignment_field_pos, _alignment_field_width, count);
-  }
+  } /* set_alignment_bytes_count */
 
-  bool contains_long_characters () const
-  {
-    return get_field (_has_special_characters_field_pos, _has_special_characters_field_width) != 0;
-  }
-
-  void set_contains_long_characters (bool has_long_characters)
-  {
-    set_field (_has_special_characters_field_pos, _has_special_characters_field_width, (size_t) has_long_characters);
-  }
-
-  ecma_string_hash_t get_hash () const
+  /**
+   * Get hash value of the record's charset.
+   *
+   * @return hash value of the string (the value of the 'hash' field in the header)
+   */
+  ecma_string_hash_t
+  get_hash () const
   {
     return (ecma_string_hash_t) get_field (_hash_field_pos, _hash_field_width);
-  }
+  } /* get_hash */
 
-  void set_hash (ecma_string_hash_t h)
+  /**
+   * Get the length of the string, which is contained inside the record
+   *
+   * @return length of the string (count of the ecma_char_t characters inside the charset)
+   */
+  ecma_length_t
+  get_length () const
   {
-    set_field (_hash_field_pos, _hash_field_width, h);
-  }
+    return (ecma_length_t) ((get_size () - header_size () - get_alignment_bytes_count ()) / sizeof (ecma_char_t));
+  } /* get_length */
 
-  ecma_length_t get_length () const
-  {
-    if (contains_long_characters ())
-    {
-      JERRY_UNIMPLEMENTED ("Support for unicode is not implemented yet.");
-    }
-    else
-    {
-      return (ecma_length_t) ((get_size () - header_size () - get_alignment_bytes_count ()) / sizeof (ecma_char_t));
-    }
-  }
-
-  size_t get_size () const
+  /**
+   * Get the size of the record
+   *
+   * @return size of the record in bytes
+   */
+  size_t
+  get_size () const
   {
     return get_field (_length_field_pos, _length_field_width) * RCS_DYN_STORAGE_LENGTH_UNIT;
-  }
+  } /* get_size */
 
-  void set_size (size_t size)
+  rcs_record_t *get_prev () const;
+
+  ecma_length_t get_charset (ecma_char_t *buff, size_t size);
+
+  int compare_zt (const ecma_char_t *, size_t);
+  bool equal (lit_charset_record_t *);
+  bool equal_zt (const ecma_char_t *);
+  bool equal_non_zt (const ecma_char_t *, ecma_length_t);
+
+private:
+  /**
+   * Set record's size (the value of the 'length' field in the header)
+   */
+  void
+  set_size (size_t size) /**< size in bytes */
   {
     JERRY_ASSERT (JERRY_ALIGNUP (size, RCS_DYN_STORAGE_ALIGNMENT) == size);
 
     set_field (_length_field_pos, _length_field_width, size >> RCS_DYN_STORAGE_ALIGNMENT_LOG);
-  }
+  } /* set_size */
 
-  rcs_record_t* get_prev () const;
+  /**
+   * Set record's hash (the value of the 'hash' field in the header)
+   */
+  void
+  set_hash (ecma_string_hash_t hash) /**< hash value */
+  {
+    set_field (_hash_field_pos, _hash_field_width, hash);
+  } /* set_hash */
+
   void set_prev (rcs_record_t* prev_rec_p);
+
   void set_charset (const ecma_char_t *s, size_t size);
-  void get_charset (ecma_char_t *buff, size_t size);
 
-  int compare_zt (const ecma_char_t *, size_t);
-  bool equal (lit_charset_record *);
-  bool equal_zt (const ecma_char_t *);
-  bool equal_non_zt (const ecma_char_t *, ecma_length_t);
-
- private:
+  /**
+   * Offset and length of 'alignment' field, in bits
+   */
   static const uint32_t _alignment_field_pos = _fields_offset_begin;
   static const uint32_t _alignment_field_width = 2u;
 
-  static const uint32_t _has_special_characters_field_pos = _alignment_field_pos + _alignment_field_width;
-  static const uint32_t _has_special_characters_field_width = 1u;
-
-  static const uint32_t _hash_field_pos = (_has_special_characters_field_pos +
-                                           _has_special_characters_field_width + 1u);
+  /**
+   * Offset and length of 'hash' field, in bits
+   */
+  static const uint32_t _hash_field_pos = _alignment_field_pos + _alignment_field_width + 2u;
   static const uint32_t _hash_field_width = 8u;
 
+  /**
+   * Offset and length of 'alignment' field, in bits
+   */
   static const uint32_t _length_field_pos = _hash_field_pos + _hash_field_width;
   static const uint32_t _length_field_width = 16u;
 
+  /**
+   * Offset and length of 'prev' field, in bits
+   */
   static const uint32_t _prev_field_pos = _length_field_pos + _length_field_width;
   static const uint32_t _prev_field_width = rcs_cpointer_t::bit_field_width;
 
   static const size_t _header_size = RCS_DYN_STORAGE_LENGTH_UNIT + RCS_DYN_STORAGE_LENGTH_UNIT / 2;
-};
+}; /* lit_charset_record_t */
 
 /**
- * type (4 bits) | magic string id  (12 bits) | pointer to prev (half)
- *             2 | (ecma_magic_string_id_t)   |
+ * Magic string record
+ * Doesn't hold any characters. Corresponding string is identified by its id.
+ *
+ * Layout:
+ * ------- header -----------------------
+ * type (4 bits)
+ * magic string id  (12 bits)
+ * pointer to prev (16 bits)
+ * --------------------------------------
  */
-class lit_magic_record : public rcs_record_t
+class lit_magic_record_t : public rcs_record_t
 {
- public:
+  friend class rcs_recordset_t;
+  friend class lit_literal_storage_t;
+
+public:
+  /**
+   * Calculate the size that record will occupy inside the storage
+   *
+   * @return size of the record in bytes
+   */
   static size_t size ()
   {
     return _size;
-  }
+  } /* size */
 
+  /**
+   * Get the size of the header part of the record
+   *
+   * @return size of the header in bytes
+   */
   static size_t header_size ()
   {
     return _size;
-  }
+  } /* header_size */
 
+  /**
+   * Get the size of the record
+   *
+   * @return size of the record in bytes
+   */
   size_t get_size () const
   {
     return _size;
-  }
+  } /* get_size */
 
-  void set_size (size_t size)
-  {
-    JERRY_ASSERT (size == get_size ());
-  }
-
-  rcs_record_t* get_prev () const
-  {
-    return get_pointer (prev_field_pos, prev_field_width);
-  }
-
-  void set_prev (rcs_record_t* prev_rec_p)
-  {
-    set_pointer (prev_field_pos, prev_field_width, prev_rec_p);
-  }
-
+  /**
+   * Get magic string id which is held by the record
+   *
+   * @return magic string id
+   */
   ecma_magic_string_id_t get_magic_str_id () const
   {
     uint32_t id = get_field (magic_field_pos, magic_field_width);
     JERRY_ASSERT (id < ECMA_MAGIC_STRING__COUNT);
     return (ecma_magic_string_id_t) id;
-  }
+  } /* get_magic_str_id */
+
+private:
+  /**
+   * Set record's size (the value of the 'length' field in the header)
+   */
+  void set_size (size_t size) /**< size in bytes */
+  {
+    JERRY_ASSERT (size == get_size ());
+  } /* set_size */
 
   void set_magic_str_id (ecma_magic_string_id_t id)
   {
     set_field (magic_field_pos, magic_field_width, id);
-  }
+  } /* set_magic_str_id */
 
- private:
+  /**
+   * Get previous record in the literal storage
+   *
+   * @return  pointer to the previous record relative to this record, or NULL if this is the first record in the
+   *          storage
+   */
+  rcs_record_t *get_prev () const
+  {
+    return get_pointer (prev_field_pos, prev_field_width);
+  } /* get_prev */
+
+  /**
+   * Set the pointer to the previous record inside the literal storage (sets 'prev' field in the header)
+   */
+  void set_prev (rcs_record_t *prev_rec_p)
+  {
+    set_pointer (prev_field_pos, prev_field_width, prev_rec_p);
+  } /* set_prev */
+
+
+  /**
+   * Offset and length of 'magic string id' field, in bits
+   */
   static const uint32_t magic_field_pos = _fields_offset_begin;
   static const uint32_t magic_field_width = 12u;
 
+  /**
+   * Offset and length of 'prev' field, in bits
+   */
   static const uint32_t prev_field_pos = magic_field_pos + magic_field_width;
   static const uint32_t prev_field_width = rcs_cpointer_t::bit_field_width;
 
   static const size_t _size = RCS_DYN_STORAGE_LENGTH_UNIT;
-};
+}; /* lit_magic_record_t */
 
-#define DEFINE_NUMBER_RECORD(type) \
-  class lit_number_record : public rcs_record_t \
-  { \
-   public: \
-    static size_t size () { return _size; } \
-    static size_t header_size () { return _header_size; } \
-    size_t get_size () const { return _size; } \
-    void set_size (size_t size) { JERRY_ASSERT (size == get_size ()); } \
-     \
-    rcs_record_t* get_prev () const \
-    { \
-      return get_pointer (prev_field_pos, prev_field_width); \
-    } \
-    \
-    void set_prev (rcs_record_t* prev_rec_p) \
-    { \
-      set_pointer (prev_field_pos, prev_field_width, prev_rec_p); \
-    } \
-    \
-    type get_number () \
-    { \
-      rcs_record_iterator_t it ((rcs_recordset_t *)&lit_storage, \
-                                (rcs_record_t *)this); \
-      it.skip (header_size ()); \
-      return it.read<type> (); \
-    } \
-   private: \
-    static const uint32_t magic_field_pos = _fields_offset_begin; \
-    static const uint32_t magic_field_width = 12u; \
-    \
-    static const uint32_t prev_field_pos = magic_field_pos + magic_field_width; \
-    static const uint32_t prev_field_width = rcs_cpointer_t::bit_field_width; \
-    \
-    static const size_t _header_size = RCS_DYN_STORAGE_LENGTH_UNIT; \
-    static const size_t _size = _header_size + sizeof (type); \
+
+/**
+ * Number record
+ * Doesn't hold any characters, holds a number. Numbers from source code are represented as number literals.
+ *
+ * Layout:
+ * ------- header -----------------------
+ * type (4 bits)
+ * magic string id  (12 bits)
+ * pointer to prev (16 bits)
+ * --------------------------------------
+ */
+class lit_number_record_t : public rcs_record_t
+{
+  friend class rcs_recordset_t;
+  friend class lit_literal_storage_t;
+
+public:
+
+  static size_t
+  size ()
+  {
+    return _size;
   }
 
-DEFINE_NUMBER_RECORD (ecma_number_t);
+  /**
+   * Get the size of the header part of the record
+   *
+   * @return size of the header in bytes
+   */
+  static size_t
+  header_size ()
+  {
+    return _header_size;
+  }
 
+  /**
+   * Get the size of the record
+   *
+   * @return size of the record in bytes
+   */
+  size_t
+  get_size () const
+  {
+    return _size;
+  } /* get_size */
+
+  /**
+   * Get previous record in the literal storage
+   *
+   * @return  pointer to the previous record relative to this record, or NULL if this is the first record in the
+   *          storage
+   */
+  rcs_record_t *
+  get_prev () const
+  {
+    return get_pointer (prev_field_pos, prev_field_width);
+  } /* get_prev */
+
+  /**
+   * Set the pointer to the previous record inside the literal storage (sets 'prev' field in the header)
+   */
+  void
+  set_prev (rcs_record_t* prev_rec_p)
+  {
+    set_pointer (prev_field_pos, prev_field_width, prev_rec_p);
+  } /* set_prev */
+
+  /**
+   * Get the number which is held by the record
+   *
+   * @return number
+   */
+  ecma_number_t
+  get_number () const
+  {
+    rcs_record_iterator_t it ((rcs_recordset_t *)&lit_storage,
+                              (rcs_record_t *)this);
+    it.skip (header_size ());
+    return it.read<ecma_number_t> ();
+  } /* get_number */
+
+private:
+  /**
+   * Set record's size (the value of the 'length' field in the header)
+   */
+  void
+  set_size (size_t size) /**< size in bytes */
+  {
+    JERRY_ASSERT (size == get_size ());
+  } /* set_size */
+
+  /**
+   * Offset and length of 'prev' field, in bits
+   */
+  static const uint32_t prev_field_pos = _fields_offset_begin + 12u;
+  static const uint32_t prev_field_width = rcs_cpointer_t::bit_field_width;
+
+  static const size_t _header_size = RCS_DYN_STORAGE_LENGTH_UNIT;
+  static const size_t _size = _header_size + sizeof (ecma_number_t);
+}; /* lit_number_record_t */
+
+/**
+ * Literal storage
+ *
+ * Represents flexible storage for the literals. The following records could be created inside the storage:
+ * - charset literal (lit_charset_record_t)
+ * - magic string literal (lit_magic_record_t)
+ * - number literal (lit_number_record_t)
+ */
 class lit_literal_storage_t : public rcs_recordset_t
 {
- public:
+public:
   enum
   {
     LIT_STR = _first_type_id,
@@ -245,34 +413,17 @@ class lit_literal_storage_t : public rcs_recordset_t
     LIT_NUMBER
   };
 
-
-  lit_charset_record *
-  create_charset_record (const ecma_char_t *s, size_t buf_size);
-
-  lit_magic_record *
-  create_magic_record (ecma_magic_string_id_t id)
-  {
-    lit_magic_record *ret = alloc_record<lit_magic_record> (LIT_MAGIC_STR);
-    ret->set_magic_str_id (id);
-    return ret;
-  }
-
-  lit_number_record *
-  create_number_record (ecma_number_t num)
-  {
-    lit_number_record *ret = alloc_record<lit_number_record> (LIT_NUMBER);
-    rcs_record_iterator_t it (this, ret);
-    it.skip (ret->header_size ());
-    it.write<ecma_number_t> (num);
-    return ret;
-  }
+  lit_charset_record_t *create_charset_record (const ecma_char_t *s, size_t buf_size);
+  lit_magic_record_t *create_magic_record (ecma_magic_string_id_t id);
+  lit_number_record_t *create_number_record (ecma_number_t num);
 
   void dump ();
- private:
-  virtual rcs_record_t* get_prev (rcs_record_t* rec_p);
-  virtual void set_prev (rcs_record_t* rec_p, rcs_record_t *prev_rec_p);
-  virtual size_t get_record_size (rcs_record_t* rec_p);
-};
+
+private:
+  virtual rcs_record_t *get_prev (rcs_record_t *rec_p);
+  virtual void set_prev (rcs_record_t *rec_p, rcs_record_t *prev_rec_p);
+  virtual size_t get_record_size (rcs_record_t *rec_p);
+}; /* lit_literal_storage_t */
 
 #define LIT_STR_T (lit_literal_storage_t::LIT_STR)
 #define LIT_MAGIC_STR_T (lit_literal_storage_t::LIT_MAGIC_STR)
