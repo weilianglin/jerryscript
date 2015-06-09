@@ -37,7 +37,7 @@
 /**
  * Pointer to lit_id_hash_table precedes every independent bytecode region
  */
-typedef struct
+typedef struct __attribute__ ((aligned (MEM_ALIGNMENT)))
 {
   lit_id_hash_table *lit_id_hash;
 } opcodes_header_t;
