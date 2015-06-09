@@ -97,8 +97,8 @@ ecma_builtin_function_dispatch_construct (const ecma_value_t *arguments_list_p, 
         JERRY_ASSERT (ecma_is_completion_value_normal (completion));
 
         string_params_p[params_count] = ecma_get_string_from_completion_value (completion);
-        zt_strings_buffer_size +=
-        (size_t) ecma_string_get_length (string_params_p[params_count]) + sizeof (ecma_char_t);
+        zt_strings_buffer_size += ((size_t) ecma_string_get_length (string_params_p[params_count]) +
+                                   sizeof (ecma_char_t));
       }
     }
   }
