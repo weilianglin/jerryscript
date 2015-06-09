@@ -19,6 +19,7 @@
 #include "lit-literal.h"
 
 #define INVALID_VALUE 255
+#define EVAL_RET_VALUE 128
 #define INVALID_LITERAL (rcs_cpointer_t::null_cp ())
 
 /* Keywords.  */
@@ -144,6 +145,7 @@ typedef enum __attr_packed___
 
   TOK_RSHIFT_EQ, // >>=
   TOK_RSHIFT_EX_EQ, // >>>=
+
   TOK_AND_EQ, // &=
   TOK_OR_EQ, // |=
   TOK_XOR_EQ, // ^=
@@ -163,7 +165,8 @@ typedef struct
   uint16_t uid;
 } token;
 
-void lexer_init (const char *, size_t, bool);
+void lexer_init (bool);
+void lexer_init_source (const char *, size_t);
 void lexer_free (void);
 
 token lexer_next_token (void);

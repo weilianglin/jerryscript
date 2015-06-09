@@ -28,9 +28,6 @@ static size_t buffer_size = 0;
 static const char *buffer_start = NULL;
 static const char *buffer = NULL;
 static const char *token_start;
-static ecma_char_t *strings_cache;
-static size_t strings_cache_size;
-static size_t strings_cache_used_size;
 
 #define LA(I)       (get_char (I))
 
@@ -1443,7 +1440,7 @@ lexer_set_strict_mode (bool is_strict)
 }
 
 void
-lexer_init (const char *source, size_t source_size, bool show_opcodes)
+lexer_init_source (const char *source, size_t source_size)
 {
   empty_token.type = TOK_EMPTY;
   empty_token.uid = 0;
@@ -1451,18 +1448,20 @@ lexer_init (const char *source, size_t source_size, bool show_opcodes)
 
   saved_token = prev_token = sent_token = empty_token;
 
+  buffer_size = source_size;
+  lexer_set_source (source);
+  lexer_set_strict_mode (false);
+}
+
+void
+lexer_init (bool show_opcodes)
+{
 #ifndef JERRY_NDEBUG
   allow_dump_lines = show_opcodes;
 #else /* JERRY_NDEBUG */
   (void) show_opcodes;
   allow_dump_lines = false;
 #endif /* JERRY_NDEBUG */
-
-  buffer_size = source_size;
-  lexer_set_source (source);
-  strings_cache = NULL;
-  strings_cache_used_size = strings_cache_size = 0;
-  lexer_set_strict_mode (false);
 }
 
 void

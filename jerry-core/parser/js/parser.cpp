@@ -19,21 +19,16 @@
 #include "parser.h"
 #include "opcodes.h"
 #include "serializer.h"
-#include "vm.h"
 #include "stack.h"
-#include "hash-table.h"
-#include "opcodes-native-call.h"
-#include "scopes-tree.h"
-#include "ecma-helpers.h"
 #include "syntax-errors.h"
-#include "opcodes-dumper.h"
-#include "serializer.h"
 
 #define NESTING_ITERATIONAL 1
 #define NESTING_SWITCH      2
 #define NESTING_FUNCTION    3
 
 static token tok;
+static bool inside_eval = false;
+static bool parser_show_opcodes = false;
 
 enum
 {
@@ -60,7 +55,7 @@ STATIC_STACK (scopes, scopes_tree)
 
 #define OPCODE_IS(OP, ID) (OP.op_idx == __op__idx_##ID)
 
-static operand parse_expression (bool);
+static operand parse_expression (bool, bool need_eval_result = false);
 static void parse_statement (void);
 static operand parse_assignment_expression (bool);
 static void parse_source_element_list (bool);
@@ -1594,7 +1589,7 @@ parse_assignment_expression (bool in_allowed)
   ;
  */
 static operand
-parse_expression (bool in_allowed)
+parse_expression (bool in_allowed, bool need_eval_result)
 {
   operand expr = parse_assignment_expression (in_allowed);
 
@@ -1612,6 +1607,12 @@ parse_expression (bool in_allowed)
       break;
     }
   }
+
+  if (inside_eval && need_eval_result && STACK_SIZE (nestings) == 0)
+  {
+    dump_variable_assignment (eval_ret_operand () , expr);
+  }
+
   return expr;
 }
 
@@ -2413,7 +2414,7 @@ parse_statement (void)
     {
       lexer_save_token (tok);
       tok = temp;
-      parse_expression (true);
+      parse_expression (true, true);
       skip_newlines ();
       if (!token_is (TOK_SEMICOLON))
       {
@@ -2424,7 +2425,7 @@ parse_statement (void)
   }
   else
   {
-    parse_expression (true);
+    parse_expression (true, true);
     skip_newlines ();
     if (!token_is (TOK_SEMICOLON))
     {
@@ -2752,6 +2753,11 @@ parse_source_element_list (bool is_global)
   dumper_new_scope ();
   preparse_scope (is_global);
 
+  if (inside_eval && STACK_SIZE (nestings) == 0)
+  {
+    dump_undefined_assignment (eval_ret_operand ());
+  }
+
   skip_newlines ();
   while (!token_is (TOK_EOF) && !token_is (TOK_CLOSE_BRACE))
   {
@@ -2766,9 +2772,11 @@ parse_source_element_list (bool is_global)
 /* program
   : LT!* source_element_list LT!* EOF!
   ; */
-void
-parser_parse_program (void)
+static void
+parser_parse_source_element_list (const char *source, size_t source_size, bool exit)
 {
+  lexer_init_source (source, source_size);
+
   STACK_PUSH (scopes, scopes_tree_init (NULL));
   serializer_set_scope (STACK_TOP (scopes));
   lexer_set_strict_mode (scopes_tree_strict_mode (STACK_TOP (scopes)));
@@ -2778,7 +2786,22 @@ parser_parse_program (void)
 
   skip_newlines ();
   JERRY_ASSERT (token_is (TOK_EOF));
-  dump_exit ();
+
+  if (inside_eval && STACK_SIZE (nestings) == 0)
+  {
+    dump_retval (eval_ret_operand ());
+  }
+  else
+  {
+    if (exit)
+    {
+      dump_exit ();
+    }
+    else
+    {
+      dump_ret ();
+    }
+  }
 
   serializer_dump_literals ();
   serializer_merge_scopes_into_bytecode ();
@@ -2789,15 +2812,51 @@ parser_parse_program (void)
 }
 
 void
-parser_init (const char *source, size_t source_size, bool show_opcodes)
+parser_parse_program (const char *source, size_t source_size)
 {
-  lexer_init (source, source_size, show_opcodes);
-  serializer_set_show_opcodes (show_opcodes);
+  inside_eval = false;
+  parser_parse_source_element_list (source, source_size, true);
+}
+
+bool parser_parse_eval (const char *source, size_t source_size)
+{
+  inside_eval = true;
+  // FIXME: implement syntax error processing
+  parser_parse_source_element_list (source, source_size, false);
+  return true;
+}
+
+void
+parser_parse_new_function (const char **params, size_t params_count)
+{
+  inside_eval = false;
+  // Process arguments
+  JERRY_ASSERT (params_count > 0);
+  for (size_t i = 0; i < params_count - 1; ++i)
+  {
+    // FIXME: check parameter's name for syntax errors
+    lit_find_or_create_literal_from_charset ((ecma_char_t *) params[i], (ecma_length_t) strlen (params[i]));
+  }
+
+  parser_parse_source_element_list (params[params_count - 1], strlen (params[params_count - 1]), false);
+}
+
+void
+parser_init ()
+{
+  lexer_init (parser_show_opcodes);
+  serializer_set_show_opcodes (parser_show_opcodes);
   dumper_init ();
   syntax_init ();
 
   STACK_INIT (nestings);
   STACK_INIT (scopes);
+}
+
+void
+parser_set_show_opcodes (bool show_opcodes)
+{
+  parser_show_opcodes = show_opcodes;
 }
 
 void

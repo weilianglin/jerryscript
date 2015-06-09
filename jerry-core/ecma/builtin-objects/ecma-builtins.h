@@ -55,4 +55,8 @@ ecma_builtin_is (ecma_object_t *obj_p,
                  ecma_builtin_id_t builtin_id);
 extern ecma_object_t*
 ecma_builtin_get (ecma_builtin_id_t builtin_id);
+
+extern bool
+ecma_builtin_is_eval_function (ecma_object_t *obj_p);
+
 #endif /* !ECMA_BUILTINS_H */
