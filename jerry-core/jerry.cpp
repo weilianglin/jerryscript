@@ -1108,6 +1108,8 @@ jerry_api_eval (const char *source_p, /**< source code */
     }
   }
 
+  ecma_free_completion_value (completion);
+
   ecma_deref_ecma_string (code_p);
 
   return status;
