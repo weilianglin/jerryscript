@@ -98,7 +98,7 @@ ecma_builtin_function_dispatch_construct (const ecma_value_t *arguments_list_p, 
 
         string_params_p[params_count] = ecma_get_string_from_completion_value (completion);
         zt_strings_buffer_size +=
-          (size_t) ecma_string_get_length (string_params_p[params_count]) + sizeof (ecma_char_t);
+        (size_t) ecma_string_get_length (string_params_p[params_count]) + sizeof (ecma_char_t);
       }
     }
   }
