@@ -760,8 +760,20 @@ opfunc_call_n (opcode_t opdata, /**< operation data */
         }
         else
         {
+          ecma_string_t *string_p = ecma_get_string_from_value (arg_values[0]);
+          int32_t chars_num = ecma_string_get_length (string_p);
+          MEM_DEFINE_LOCAL_ARRAY (code_zt_buffer_p,
+                                  chars_num + 1,
+                                  ecma_char_t);
+          const ssize_t buf_size = (ssize_t) sizeof (ecma_char_t) * (chars_num + 1);
+          ssize_t buffer_size_req = ecma_string_to_zt_string (string_p,
+                                                              code_zt_buffer_p,
+                                                              buf_size);
+          JERRY_ASSERT (buffer_size_req == buf_size);
+
           ECMA_TRY_CATCH (eval_ret_value,
-                          ecma_op_eval (ecma_get_string_from_value (arg_values[0]),
+                          ecma_op_eval (code_zt_buffer_p,
+                                        (size_t) buf_size,
                                         is_direct_eval,
                                         int_data->is_strict),
                           ret_value);
@@ -771,6 +783,8 @@ opfunc_call_n (opcode_t opdata, /**< operation data */
                                           eval_ret_value);
 
           ECMA_FINALIZE (eval_ret_value);
+
+          MEM_FINALIZE_LOCAL_ARRAY (code_zt_buffer_p);
         }
       }
       else

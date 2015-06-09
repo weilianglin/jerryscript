@@ -709,6 +709,9 @@ mem_heap_alloc_block_try_give_memory_back (size_t size_in_bytes, /**< size of re
 
   JERRY_ASSERT (data_space_p == NULL);
 
+#ifndef JERRY_NDEBUG
+  printf ("Memory requested: %zu\n", size_in_bytes);
+#endif /* !JERRY_NDEBUG */
   jerry_fatal (ERR_OUT_OF_MEMORY);
 } /* mem_heap_alloc_block_try_give_memory_back */
 

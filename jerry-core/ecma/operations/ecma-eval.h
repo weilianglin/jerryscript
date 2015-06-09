@@ -25,7 +25,8 @@
  */
 
 extern ecma_completion_value_t
-ecma_op_eval (ecma_string_t *code_p,
+ecma_op_eval (const ecma_char_t *code_p,
+              size_t code_size,
               bool is_direct,
               bool is_called_from_strict_mode_code);
 

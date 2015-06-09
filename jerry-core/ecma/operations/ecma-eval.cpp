@@ -39,28 +39,18 @@
  * @return completion value
  */
 ecma_completion_value_t
-ecma_op_eval (ecma_string_t *code_p, /**< code string */
+ecma_op_eval (const ecma_char_t *code_p, /**< code string */
+              size_t code_size, /**< code string's length */
               bool is_direct, /**< is eval called directly (ECMA-262 v5, 15.1.2.1.1) */
               bool is_called_from_strict_mode_code) /**< is eval is called from strict mode code */
 {
   ecma_completion_value_t completion;
 
-  int32_t chars_num = ecma_string_get_length (code_p);
-  MEM_DEFINE_LOCAL_ARRAY (code_zt_buffer_p,
-                          chars_num + 1,
-                          ecma_char_t);
-
-  const ssize_t buf_size = (ssize_t) sizeof (ecma_char_t) * (chars_num + 1);
-  ssize_t buffer_size_req = ecma_string_to_zt_string (code_p,
-                                                      code_zt_buffer_p,
-                                                      buf_size);
-  JERRY_ASSERT (buffer_size_req == buf_size);
-
   // FIXME: Get parser feedback about syntax correctness
   bool is_syntax_correct;
 
   parser_init ();
-  is_syntax_correct = parser_parse_eval ((const char *) code_zt_buffer_p, (size_t) buffer_size_req);
+  is_syntax_correct = parser_parse_eval ((const char *) code_p, code_size);
   const opcode_t* opcodes_p = (const opcode_t*) serializer_get_bytecode ();
   serializer_print_opcodes ();
   parser_free ();
@@ -111,6 +101,7 @@ ecma_op_eval (ecma_string_t *code_p, /**< code string */
                                   lex_env_p,
                                   is_strict,
                                   true);
+    ecma_gc_run ();
 
     if (ecma_is_completion_value_return (completion))
     {
@@ -127,8 +118,6 @@ ecma_op_eval (ecma_string_t *code_p, /**< code string */
   }
 
   // FIXME: Free byte-code
-
-  MEM_FINALIZE_LOCAL_ARRAY (code_zt_buffer_p);
 
   return completion;
 } /* ecma_op_eval */

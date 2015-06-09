@@ -47,6 +47,23 @@ array_list_append (array_list al, void *element)
     size_t size = mem_heap_recommend_allocation_size (h->size + h->element_size);
     JERRY_ASSERT (size > h->size);
 
+    uint8_t *v1_p = (uint8_t*) mem_heap_alloc_block (size - h->size, MEM_HEAP_ALLOC_SHORT_TERM);
+
+    if (v1_p != NULL)
+    {
+      uint8_t *v2_p = (uint8_t*) mem_heap_alloc_block (h->size, MEM_HEAP_ALLOC_SHORT_TERM);
+
+      if (v2_p != NULL)
+      {
+        memcpy (v2_p, (uint8_t*) h, h->size);
+        mem_heap_free_block ((uint8_t *) h);
+        h = (array_list_header*) v2_p;
+      }
+
+      mem_heap_free_block ((uint8_t*) v1_p);
+      v1_p = NULL;
+    }
+
     uint8_t* new_block_p = (uint8_t*) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_SHORT_TERM);
     memcpy (new_block_p, h, h->size);
     memset (new_block_p + h->size, 0, size - h->size);
