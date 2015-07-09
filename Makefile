@@ -180,18 +180,19 @@ $(BUILD_DIRS_STM32F4): prerequisites
           cmake -DENABLE_VALGRIND=$(VALGRIND) -DENABLE_LTO=$(LTO) -DCMAKE_TOOLCHAIN_FILE=build/configs/toolchain_mcu_stm32f4.cmake ../../.. &>cmake.log || \
           (echo "CMake run failed. See "`pwd`"/cmake.log for details."; exit 1;)
 
-$(JERRY_LINUX_TARGETS): $(BUILD_DIR)/native
+$(JERRY_LINUX_TARGETS): $(BUILD_DIR)/native cppcheck
 	@ mkdir -p $(OUT_DIR)/$@
-	@ [ "$(STATIC_CHECK)" = "OFF" ] || $(MAKE) -C $(BUILD_DIR)/native VERBOSE=1 cppcheck.$@ &>$(OUT_DIR)/$@/cppcheck.log || \
-          (echo "cppcheck run failed. See $(OUT_DIR)/$@/cppcheck.log for details."; exit 1;)
 	@ $(MAKE) -C $(BUILD_DIR)/native VERBOSE=1 $@ &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 	@ cp $(BUILD_DIR)/native/$@ $(OUT_DIR)/$@/jerry
 
-unittests: $(BUILD_DIR)/native
-	@ mkdir -p $(OUT_DIR)/$@
-	@ [ "$(STATIC_CHECK)" = "OFF" ] || $(MAKE) -C $(BUILD_DIR)/native VERBOSE=1 cppcheck.$@ &>$(OUT_DIR)/$@/cppcheck.log || \
+cppcheck: $(BUILD_DIR)/native
+	@ [ "$(STATIC_CHECK)" = "OFF" ] || \
+    $(MAKE) -C $(BUILD_DIR)/native VERBOSE=1 cppcheck.$@ &>$(OUT_DIR)/$@/cppcheck.log || \
           (echo "cppcheck run failed. See $(OUT_DIR)/$@/cppcheck.log for details."; exit 1;)
+
+unittests: $(BUILD_DIR)/native cppcheck
+	@ mkdir -p $(OUT_DIR)/$@
 	@ $(MAKE) -C $(BUILD_DIR)/native VERBOSE=1 $@ &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 	@ cp $(BUILD_DIR)/native/unit-test-* $(OUT_DIR)/$@
@@ -205,10 +206,8 @@ $(BUILD_ALL)_native: $(BUILD_DIRS_NATIVE)
 	@ $(MAKE) -C $(BUILD_DIR)/native $(JERRY_LINUX_TARGETS) unittests VERBOSE=1 &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 
-$(JERRY_STM32F3_TARGETS): $(BUILD_DIR)/stm32f3
+$(JERRY_STM32F3_TARGETS): $(BUILD_DIR)/stm32f3 cppcheck
 	@ mkdir -p $(OUT_DIR)/$@
-	@ [ "$(STATIC_CHECK)" = "OFF" ] || $(MAKE) -C $(BUILD_DIR)/stm32f3 VERBOSE=1 cppcheck.$@ &>$(OUT_DIR)/$@/cppcheck.log || \
-          (echo "cppcheck run failed. See $(OUT_DIR)/$@/cppcheck.log for details."; exit 1;)
 	@ $(MAKE) -C $(BUILD_DIR)/stm32f3 VERBOSE=1 $@.bin &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 	@ cp $(BUILD_DIR)/stm32f3/$@ $(OUT_DIR)/$@/jerry
@@ -221,10 +220,8 @@ $(BUILD_ALL)_stm32f3: $(BUILD_DIRS_STM32F3)
 	@ $(MAKE) -C $(BUILD_DIR)/stm32f3 $(JERRY_STM32F3_TARGETS) VERBOSE=1 &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 
-$(JERRY_STM32F4_TARGETS): $(BUILD_DIR)/stm32f4
+$(JERRY_STM32F4_TARGETS): $(BUILD_DIR)/stm32f4 cppcheck
 	@ mkdir -p $(OUT_DIR)/$@
-	@ [ "$(STATIC_CHECK)" = "OFF" ] || $(MAKE) -C $(BUILD_DIR)/stm32f4 VERBOSE=1 cppcheck.$@ &>$(OUT_DIR)/$@/cppcheck.log || \
-          (echo "cppcheck run failed. See $(OUT_DIR)/$@/cppcheck.log for details."; exit 1;)
 	@ $(MAKE) -C $(BUILD_DIR)/stm32f4 VERBOSE=1 $@.bin &>$(OUT_DIR)/$@/make.log || \
           (echo "Build failed. See $(OUT_DIR)/$@/make.log for details."; exit 1;)
 	@ cp $(BUILD_DIR)/stm32f4/$@ $(OUT_DIR)/$@/jerry
@@ -267,8 +264,7 @@ precommit: clean prerequisites
 unittests_run: unittests
 	@rm -rf $(OUT_DIR)/unittests/check
 	@mkdir -p $(OUT_DIR)/unittests/check
-	@./tools/runners/run-unittests.sh $(OUT_DIR)/unittests || \
-         (echo "Unit tests run failed. See $(OUT_DIR)/unittests/unit_tests_run.log for details."; exit 1;)
+	@./tools/runners/run-unittests.sh $(OUT_DIR)/unittests || cat $(OUT_DIR)/unittests/unit_tests_run.log; exit 1;)
 
 clean:
 	@ rm -rf $(BUILD_DIR_PREFIX)* $(OUT_DIR)
