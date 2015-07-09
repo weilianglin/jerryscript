@@ -24,7 +24,7 @@ UNICODE_DATA_PATH="$1"
 #
 UNICODE_CHAR_CATEGORY="$2"
 
-UNICODE_CHAR_CATEGORY_UPPER_CASE=`echo $UNICODE_CHAR_CATEGORY | tr '[:lower:]' '[:upper:]'`
+UNICODE_CHAR_CATEGORY_UPPER_CASE=$(echo ${UNICODE_CHAR_CATEGORY} | tr '[:lower:]' '[:upper:]')
 
 #
 # 1. Print character codes, categories, and names

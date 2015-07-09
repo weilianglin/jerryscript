@@ -14,15 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REPOSITORY_DIR=$(dirname $0)/../..
-VERA=$REPOSITORY_DIR/third-party/vera++/bin/vera++
+REPOSITORY_DIR=$(dirname "$0")/../..
+VERA=${REPOSITORY_DIR}/third-party/vera++/bin/vera++
 
-if [ ! -x $VERA ]
+if [ ! -x "${VERA}" ]
 then
   exit 1;
 fi
 
-$VERA "$@"
+${VERA} "$@"
 status_code=$?
 
-exit $status_code
+exit ${status_code}

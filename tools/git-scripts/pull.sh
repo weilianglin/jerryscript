@@ -17,7 +17,7 @@
 git pull --rebase
 status_code=$?
 
-if [ $status_code -ne 0 ]
+if [ ${status_code} -ne 0 ]
 then
   echo "Pulling master failed"
 
@@ -27,7 +27,7 @@ fi
 git fetch origin refs/notes/*:refs/notes/*
 status_code=$?
 
-if [ $status_code -ne 0 ]
+if [ ${status_code} -ne 0 ]
 then
   echo "Pulling notes failed"
 

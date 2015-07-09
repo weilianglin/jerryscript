@@ -16,15 +16,15 @@
 
 TIMEOUT=${TIMEOUT:=30}
 
-START_DIR=`pwd`
+START_DIR=$(pwd)
 
-ENGINE=$START_DIR/$1
+ENGINE=${START_DIR}/$1
 shift
 
 OUT_DIR=$1
 shift
 
-TESTS=$START_DIR/$1
+TESTS=${START_DIR}/$1
 shift
 
 ECHO_PROGRESS=1
@@ -37,33 +37,33 @@ do
   fi
   if [ "$1" = "--output-to-log" ]
   then
-    exec 1>$OUT_DIR/jerry_test.log
+    exec 1>${OUT_DIR}/jerry_test.log
     ECHO_PROGRESS=0
   fi
 
   shift
 done
 
-if [ ! -x $ENGINE ]
+if [ ! -x ${ENGINE} ]
 then
-  echo \"$ENGINE\" is not an executable file
+  echo \"${ENGINE}\" is not an executable file
 fi
 
-cd $OUT_DIR
+cd ${OUT_DIR}
 
 JS_FILES=js.files
 JERRY_ERROR=jerry.error
 JERRY_OK=jerry.passed
 
-rm -f $JS_FILES $JERRY_ERROR
+rm -f ${JS_FILES} ${JERRY_ERROR}
 
-if [ -d $TESTS ];
+if [ -d ${TESTS} ];
 then
- find $TESTS -path $TESTS/fail -prune -o -name "[^N]*.js" -print | sort > $JS_FILES
+ find ${TESTS} -path ${TESTS}/fail -prune -o -name "[^N]*.js" -print | sort > ${JS_FILES}
 else
- if [ -f $TESTS ];
+ if [ -f ${TESTS} ];
  then
-  awk "{print \"$START_DIR/\"\$1;}" $TESTS > $JS_FILES
+  awk "{print \"$START_DIR/\"\$1;}" ${TESTS} > ${JS_FILES}
  fi;
 fi;
 total=$(cat $JS_FILES | wc -l)
@@ -76,43 +76,43 @@ JERRY_TEMP=jerry.tmp
 
 echo "  Passed / Failed / Tested / Total / Percent"
 
-for test in `cat $JS_FILES`
+for test in `cat ${JS_FILES}`
 do
-    percent=$(echo $tested*100/$total | bc)
+    percent=$(echo ${tested}*100/${total} | bc)
 
-    ( ulimit -t $TIMEOUT; ${ENGINE} ${JERRY_ARGS} ${test} &>$JERRY_TEMP; exit $? );
+    ( ulimit -t ${TIMEOUT}; ${ENGINE} ${JERRY_ARGS} ${test} &>${JERRY_TEMP}; exit $? );
     status_code=$?
 
-    if [ $ECHO_PROGRESS -eq 1 ]
+    if [ ${ECHO_PROGRESS} -eq 1 ]
     then
-      printf "\r\e[2K[ %6d / %6d / %6d / %5d / %3d%%    ]" ${passed} ${failed} ${tested} ${total} ${percent}
+      printf "\r\e[2K[ %6d / %6d / %6d / %5d / %3d%%    ]" ${passed} ${failed} ${tested} "${total}" "${percent}"
     fi
 
-    if [ $status_code -ne 0 ]
+    if [ ${status_code} -ne 0 ]
     then
-        echo "$status_code: ${test}" >> $JERRY_ERROR
-        echo "============================================" >> $JERRY_ERROR
-        cat $JERRY_TEMP >> $JERRY_ERROR
-        echo "============================================" >> $JERRY_ERROR
-        echo >> $JERRY_ERROR
-        echo >> $JERRY_ERROR
+        echo "$status_code: ${test}" >> ${JERRY_ERROR}
+        echo "============================================" >> ${JERRY_ERROR}
+        cat ${JERRY_TEMP} >> ${JERRY_ERROR}
+        echo "============================================" >> ${JERRY_ERROR}
+        echo >> ${JERRY_ERROR}
+        echo >> ${JERRY_ERROR}
 
         failed=$((failed+1))
     else
-        echo "${test}" >> $JERRY_OK
+        echo "${test}" >> ${JERRY_OK}
         passed=$((passed+1))
     fi
 
     tested=$((tested+1))
 done
 
-rm -f $JERRY_TEMP
+rm -f ${JERRY_TEMP}
 
-printf "\r\e[2K[ %6d / %6d / %6d / %5d / %3d%%    ]\n" ${passed} ${failed} ${tested} ${total} ${percent}
+printf "\r\e[2K[ %6d / %6d / %6d / %5d / %3d%%    ]\n" ${passed} ${failed} ${tested} "${total}" "${percent}"
 
 ratio=$(echo $passed*100/$total | bc)
 
-echo ==========================
+echo "=========================="
 echo "Number of tests passed:   ${passed}"
 echo "Number of tests failed:   ${failed}"
 echo --------------------------

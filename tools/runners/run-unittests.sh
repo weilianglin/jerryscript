@@ -28,24 +28,24 @@ do
   shift
 done
 
-rm -f $DIR/unit_tests_run.log
+rm -f "${DIR}"/unit_tests_run.log
 
-UNITTESTS=$(ls $DIR/unit-*)
+UNITTESTS=$(ls "${DIR}"/unit-*)
 
-for unit_test in $UNITTESTS;
+for unit_test in ${UNITTESTS};
 do
-  [ $OPTION_SILENT = "enable" ] || echo -n "Running $unit_test... ";
+  [ ${OPTION_SILENT} = "enable" ] || echo -n "Running $unit_test... ";
 
-  $unit_test >&$DIR/unit_tests_run.log.tmp;
+  ${unit_test} >& "${DIR}"/unit_tests_run.log.tmp;
   status_code=$?
-  cat $DIR/unit_tests_run.log.tmp >> $DIR/unit_tests_run.log
-  rm $DIR/unit_tests_run.log.tmp
+  cat "${DIR}"/unit_tests_run.log.tmp >> "${DIR}"/unit_tests_run.log
+  rm "${DIR}"/unit_tests_run.log.tmp
 
-  if [ $status_code -eq 0 ];
+  if [ ${status_code} -eq 0 ];
   then
-    [ $OPTION_SILENT = "enable" ] || echo OK;
+    [ ${OPTION_SILENT} = "enable" ] || echo OK;
   else
-    [ $OPTION_SILENT = "enable" ] || echo FAILED;
+    [ ${OPTION_SILENT} = "enable" ] || echo FAILED;
     exit 1;
   fi;
 done

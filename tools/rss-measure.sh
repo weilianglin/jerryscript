@@ -23,34 +23,34 @@ Rss_OUT=""
 function collect_entry()
 {
   OUT_NAME="$1_OUT";
-  OUT=$OUT_NAME;
+  OUT=${OUT_NAME};
 
-  SUM=$(grep -o -e "^[0-9a-f][0-9a-f]*.*" -e "^Rss.*" /proc/$PID/smaps 2>/dev/null | grep -A 1 -- "r[w-]-p " | grep "^Rss"|awk '{s += $2;} END {print s;}')
+  SUM=$(grep -o -e "^[0-9a-f][0-9a-f]*.*" -e "^Rss.*" /proc/"${PID}"/smaps 2>/dev/null | grep -A 1 -- "r[w-]-p " | grep "^Rss"|awk '{s += $2;} END {print s;}')
 
   if [ "$SUM" != "" ];
   then
-    eval "$OUT=\"\$$OUT $SUM\\n\"";
+    eval "${OUT}=\"\$${OUT} ${SUM}\\n\"";
   fi;
 }
 
 function print_entry()
 {
   OUT_NAME="$1_OUT";
-  OUT=$OUT_NAME;
+  OUT=${OUT_NAME};
 
-  eval "echo -e \"\$$OUT\"" | awk -v entry="$1" '{ if ($1 != "") { n += 1; if ($1 > max) { max = $1; } } } END { if (n == 0) { exit; }; printf "%s:%8d Kb\n", entry,  max; }';
+  eval "echo -e \"\$${OUT}\"" | awk -v entry="$1" '{ if ($1 != "") { n += 1; if ($1 > max) { max = $1; } } } END { if (n == 0) { exit; }; printf "%s:%8d Kb\n", entry,  max; }';
 }
 
 function run_test()
 {
-  $JERRY $TEST &
+  ${JERRY} "${TEST}" &
   PID=$!
 
-  while kill -0 "$PID" > /dev/null 2>&1;
+  while kill -0 "${PID}" > /dev/null 2>&1;
   do
     collect_entry Rss
 
-    sleep $SLEEP
+    sleep ${SLEEP}
   done
 }
 

@@ -17,7 +17,7 @@
 FLAG_FILE="$1"
 shift
 
-rm -f $FLAG_FILE
+rm -f "${FLAG_FILE}"
 
 if [ "$1" == "clean" ]
 then
@@ -29,7 +29,7 @@ fi
 trap clean_on_exit INT
 
 function clean_on_exit() {
-  rm -rf $TMP_DIR
+  rm -rf "$TMP_DIR"
 
   [[ $1 == "OK" ]] || exit 1
   exit 0
@@ -43,10 +43,10 @@ function fail_msg() {
 
 function remove_gitignore_files_at() {
   DEST="$1"
-  gitignore_files_list=`find "$DEST" -name .gitignore`
+  gitignore_files_list=$(find "$DEST" -name .gitignore)
   [ $? -eq 0 ] || fail_msg "Failed to search for .gitignore in '$DEST'."
 
-  rm -rf $gitignore_files_list || fail_msg "Failed to remove .gitignore files from '$DEST'."
+  rm -rf "${gitignore_files_list}" || fail_msg "Failed to remove .gitignore files from '$DEST'."
 }
 
 function setup_from_zip() {
@@ -77,20 +77,20 @@ function setup_from_zip() {
     return 0
   fi
 
-  wget --no-check-certificate -O "$TMP_DIR/$NAME.zip" "$URL" || fail_msg "$FAIL_MSG. Cannot download '$URL' zip archive."
+  wget --no-check-certificate -O "${TMP_DIR}/${NAME}.zip" "${URL}" || fail_msg "${FAIL_MSG}. Cannot download '$URL' zip archive."
 
-  echo "$CHECKSUM  $TMP_DIR/$NAME.zip" | sha256sum --check --strict || fail_msg "$FAIL_MSG. Archive's checksum doesn't match."
+  echo "${CHECKSUM}  ${TMP_DIR}/${NAME}.zip" | sha256sum --check --strict || fail_msg "${FAIL_MSG}. Archive's checksum doesn't match."
 
-  unzip "$TMP_DIR/$NAME.zip" -d "$TMP_DIR/$NAME" || fail_msg "$FAIL_MSG. Failed to unpack zip archive."
-  mkdir "$DEST" || fail_msg "$FAIL_MSG. Failed to create '$DEST' directory."
+  unzip "${TMP_DIR}/${NAME}.zip" -d "${TMP_DIR}/${NAME}" || fail_msg "${FAIL_MSG}. Failed to unpack zip archive."
+  mkdir "${DEST}" || fail_msg "${FAIL_MSG}. Failed to create '$DEST' directory."
 
-  for part in "$LIST"
+  for part in ${LIST}
   do
-    mv "$TMP_DIR/$NAME"/$part "$DEST" || fail_msg "$FAIL_MSG. Failed to move '$part' to '$DEST'."
+    mv "${TMP_DIR}/${NAME}/${part}" "${DEST}" || fail_msg "${FAIL_MSG}. Failed to move '$part' to '$DEST'."
   done
 
-  remove_gitignore_files_at "$DEST"
-  chmod -R u-w "$DEST" || fail_msg "$FAIL_MSG. Failed to remove write permission from '$DEST' directory contents."
+  remove_gitignore_files_at "${DEST}"
+  chmod -R u-w "${DEST}" || fail_msg "${FAIL_MSG}. Failed to remove write permission from '$DEST' directory contents."
 }
 
 function setup_cppcheck() {
@@ -185,7 +185,7 @@ function setup_vera() {
   chmod -R u-w "$DEST" || fail_msg "$FAIL_MSG. Failed to remove write permission from '$DEST' directory contents."
 }
 
-TMP_DIR=`mktemp -d --tmpdir=./`
+TMP_DIR=$(mktemp -d --tmpdir=./)
 
 setup_from_zip "stm32f3" \
                "./third-party/STM32F3-Discovery_FW_V1.1.0" \
@@ -211,7 +211,7 @@ setup_vera "vera++-1.2.1" \
 
 if [ "$CLEAN_MODE" == "no" ]
 then
-  touch $FLAG_FILE || fail_msg "Failed to create flag file '$FLAG_FILE'."
+  touch "${FLAG_FILE}" || fail_msg "Failed to create flag file '$FLAG_FILE'."
 fi
 
 clean_on_exit "OK"

@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TARGET=$1
-PARSE=$2
-rm ./js.files jerry.error jerry.passed; ./tools/runners/run-test-pass.sh $TARGET . ./tests/jerry-test-suite/compact_profile_list $PARSE
+TARGET="$1"
+PARSE="$2"
+rm ./js.files jerry.error jerry.passed; ./tools/runners/run-test-pass.sh "${TARGET}" . ./tests/jerry-test-suite/compact_profile_list "${PARSE}"

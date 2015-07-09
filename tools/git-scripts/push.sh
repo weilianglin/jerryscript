@@ -19,19 +19,19 @@ GIT_STATUS_CONSIDER_CLEAN_MSG="Consider removing all untracked files, locally co
 
 clear
 
-gitignore_files_list=`find . -name .gitignore`
+gitignore_files_list=$(find . -name .gitignore)
 
 if [ "$gitignore_files_list" != "./.gitignore" ]
 then
   echo -e "\n\e[1;33mInvalid .gitignore configuration\e[0m\n"
   echo -e -n ".gitignore files list:\t"
-  echo $gitignore_files_list
+  echo "${gitignore_files_list}"
   echo
 
   exit 1
 fi
 
-if [ "`git status --porcelain 2>&1 | wc -l`" != "0" ]
+if [ "$(git status --porcelain 2>&1 | wc -l)" != "0" ]
 then
   echo -e "\n  \e[1;90m$GIT_STATUS_NOT_CLEAN_MSG:\n"
   git status
@@ -40,11 +40,11 @@ fi
 
 ok_to_push=1
 
-current_branch=`git branch | grep "^* " | cut -d ' ' -f 2`
-git branch -r | grep "^ *origin/$current_branch$" 2>&1 > /dev/null
+current_branch=$(git branch | grep "^* " | cut -d ' ' -f 2)
+git branch -r | grep "^ *origin/$current_branch$" >&/dev/null
 have_remote=$?
 
-if [ $have_remote -eq 0 ]
+if [ ${have_remote} -eq 0 ]
 then
   base_ref="origin/$current_branch"
 
@@ -53,27 +53,27 @@ then
   make pull
   status_code=$?
 
-  if [ $status_code -ne 0 ]
+  if [ ${status_code} -ne 0 ]
   then
     echo "Pull failed"
     exit 1
   fi
 else
-  base_ref=`git merge-base master $current_branch`
+  base_ref=$(git merge-base master "${current_branch}")
   status_code=$?
 
-  if [ $status_code -ne 0 ]
+  if [ ${status_code} -ne 0 ]
   then
     echo "Cannot determine merge-base for '$current_branch' and 'master' branches."
     exit 1
   fi
 fi
 
-commits_to_push=`git log $base_ref..$current_branch | grep "^commit [0-9a-f]*$" | awk 'BEGIN { s = ""; } { s = $2" "s; } END { print s; }'`
+commits_to_push=$(git log "${base_ref}".."${current_branch}" | grep "^commit [0-9a-f]*$" | awk 'BEGIN { s = ""; } { s = $2" "s; } END { print s; }')
 
-echo $commits_to_push | grep "[^ ]" >&/dev/null
+echo "${commits_to_push}" | grep "[^ ]" >&/dev/null
 status_code=$?
-if [ $status_code -ne 0 ]
+if [ ${status_code} -ne 0 ]
 then
   echo "Nothing to push"
   exit 0
@@ -82,7 +82,7 @@ fi
 trap ctrl_c INT
 
 function ctrl_c() {
-    git checkout $current_branch >&/dev/null
+    git checkout "${current_branch}" >&/dev/null
 
     exit 1
 }
@@ -93,12 +93,12 @@ echo
 echo "Commits list: $commits_to_push"
 echo
 
-for commit_hash in $commits_to_push
+for commit_hash in ${commits_to_push}
 do
-  git checkout $commit_hash >&/dev/null
+  git checkout "${commit_hash}" >&/dev/null
   status_code=$?
 
-  if [ $status_code -ne 0 ]
+  if [ ${status_code} -ne 0 ]
   then
     echo "git checkout $commit_hash failed"
 
@@ -107,12 +107,12 @@ do
 
   echo " > Testing $commit_hash"
   echo -n " > "
-  git log  --pretty=format:"%H %s" | grep $commit_hash | grep -o " .*"
+  git log  --pretty=format:"%H %s" | grep "${commit_hash}" | grep -o " .*"
   echo
 
   make -s -j precommit 2>&1
   status_code=$?
-  if [ $status_code -ne 0 ]
+  if [ ${status_code} -ne 0 ]
   then
     echo "Pre-commit quality testing for '$commit_hash' failed"
     echo
@@ -124,30 +124,30 @@ do
   echo "Pre-commit quality testing for '$commit_hash' passed successfully"
 done
 
-git checkout $current_branch >&/dev/null
+git checkout "${current_branch}" >&/dev/null
 
 echo
 echo "Pre-commit testing passed successfully"
 echo
 
-if [ $ok_to_push -eq 1 ]
+if [ ${ok_to_push} -eq 1 ]
 then
-  if [ "`git status --porcelain 2>&1 | wc -l`" == "0" ]
+  if [ "$(git status --porcelain 2>&1 | wc -l)" == "0" ]
   then
     echo "Pushing..."
     echo
 
-    git push -u origin $current_branch
+    git push -u origin "${current_branch}"
     status_code=$?
 
-    if [ $status_code -eq 0 ]
+    if [ ${status_code} -eq 0 ]
     then
       echo -e "\n\e[0;32m     Pushed successfully\e[0m\n"
     else
       echo -e "\n\e[1;33m     Push failed\e[0m"
     fi
 
-    exit $status_code
+    exit ${status_code}
   else
     echo -e "\e[1;33m $GIT_STATUS_NOT_CLEAN_MSG. $GIT_STATUS_CONSIDER_CLEAN_MSG.\e[0m\n"
 

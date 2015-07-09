@@ -14,16 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REPOSITORY_DIR=$(dirname $0)/../..
-CPPCHECK=$REPOSITORY_DIR/third-party/cppcheck/cppcheck
-SUPPRESSIONS_LIST=$(dirname $0)/suppressions-list
+REPOSITORY_DIR=$(dirname "$0")/../..
+CPPCHECK=${REPOSITORY_DIR}/third-party/cppcheck/cppcheck
+SUPPRESSIONS_LIST=$(dirname "$0")/suppressions-list
 
-if [ ! -x $CPPCHECK ]
+if [ ! -x "$CPPCHECK" ]
 then
   exit 1;
 fi
 
-$CPPCHECK "$@" "--exitcode-suppressions=$SUPPRESSIONS_LIST"
+${CPPCHECK} "$@" "--exitcode-suppressions=$SUPPRESSIONS_LIST"
 status_code=$?
 
 exit $status_code

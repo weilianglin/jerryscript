@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "#define JERRY_MCU_SCRIPT \\" > $2
+echo "#define JERRY_MCU_SCRIPT \\" > "$2"
 # escape all " characters, wrap each line in double quotes and end the line with '\'
-sed 's/"/\\"/g' $1 | sed 's/^.*$/"\0" \\/g' >> $2
-echo >> $2
+sed 's/"/\\"/g' "$1" | sed 's/^.*$/"\0" \\/g' >> "$2"
+echo >> "$2"

@@ -71,7 +71,7 @@ declare -a SUB_CHAPTERS_TO_TEST=("${CHAPTER07_TO_TEST[@]}" "${CHAPTER08_TO_TEST[
 
 declare -a CHAPTERS_TO_TEST=("${FULL_CHAPTERS_TO_TEST[@]}")
 
-if [[ $* == *--sub-chapters* ]]
+if [[ "$@" == *--sub-chapters* ]]
 then
   declare -a CHAPTERS_TO_TEST=("${SUB_CHAPTERS_TO_TEST[@]}")
 fi
