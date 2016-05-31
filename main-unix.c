@@ -21,6 +21,7 @@
 #include "jerry.h"
 #include "jerry-port.h"
 #include "jerry-port-default.h"
+#include "string_ext.h"
 
 /**
  * Maximum command line arguments number
@@ -411,6 +412,8 @@ main (int argc,
 #endif /* JERRY_ENABLE_LOG */
 
   jerry_init (flags);
+
+  InitJerryMagicStringEx();
 
   jerry_api_object_t *global_obj_p = jerry_api_get_global ();
   jerry_api_object_t *assert_func_p = jerry_api_create_external_function (assert_handler);
