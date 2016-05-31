@@ -75,6 +75,14 @@ bool jerry_parse (const jerry_api_char_t *, size_t, jerry_api_object_t **);
 jerry_completion_code_t jerry_run (jerry_api_value_t *);
 jerry_completion_code_t jerry_run_simple (const jerry_api_char_t *, size_t, jerry_flag_t);
 
+extern uint32_t g_literals;
+extern uint32_t g_bytecode;
+extern uint32_t g_real_bytecode;
+extern uint32_t g_args;
+extern uint32_t g_regs;
+extern uint32_t g_ident;
+extern uint32_t g_const_literal;
+
 /**
  * @}
  */

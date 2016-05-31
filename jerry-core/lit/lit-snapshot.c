@@ -247,6 +247,13 @@ lit_save_literals_for_snapshot (uint8_t *buffer_p, /**< [out] output snapshot bu
 
 #ifdef JERRY_ENABLE_SNAPSHOT_EXEC
 
+static void print_string(const char *str_p, uint32_t size) {
+  static char char_array[1024*4];
+  strncpy(char_array, str_p, size);
+  char_array[size] = '\0';
+  printf("string[%d]: %s\n", size, char_array);
+}
+
 /**
  * Load literals from snapshot.
  *
@@ -282,6 +289,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
     return true;
   }
 
+  printf("literals num in literal storage: %d\n", literals_num);
   size_t id_map_size = sizeof (lit_mem_to_snapshot_id_map_entry_t) * literals_num;
   lit_mem_to_snapshot_id_map_entry_t *id_map_p;
   id_map_p = (lit_mem_to_snapshot_id_map_entry_t *) mem_heap_alloc_block_store_size (id_map_size);
@@ -305,6 +313,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
       break;
     }
 
+    printf("lit_type: %d, ", type);
     lit_literal_t lit;
 
     if (type == LIT_RECORD_TYPE_CHARSET)
@@ -321,6 +330,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
         break;
       }
 
+      print_string((char *)(lit_table_p + lit_table_read), length);
       lit = (lit_literal_t) lit_find_or_create_literal_from_utf8_string (lit_table_p + lit_table_read, length);
       lit_table_read += length;
     }
@@ -340,6 +350,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
       const lit_utf8_byte_t *magic_str_p = lit_get_magic_string_utf8 (id);
       lit_utf8_size_t magic_str_sz = lit_get_magic_string_size (id);
 
+      print_string((char *)(magic_str_p), magic_str_sz);
       /* TODO: Consider searching literal storage by magic string identifier instead of by its value */
       lit = (lit_literal_t) lit_find_or_create_literal_from_utf8_string (magic_str_p, magic_str_sz);
     }
@@ -359,6 +370,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
       const lit_utf8_byte_t *magic_str_ex_p = lit_get_magic_string_ex_utf8 (id);
       lit_utf8_size_t magic_str_ex_sz = lit_get_magic_string_ex_size (id);
 
+      print_string((char *)(magic_str_ex_p), magic_str_ex_sz);
       /* TODO: Consider searching literal storage by magic string identifier instead of by its value */
       lit = (lit_literal_t) lit_find_or_create_literal_from_utf8_string (magic_str_ex_p, magic_str_ex_sz);
     }
@@ -375,6 +387,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
         break;
       }
 
+      printf("number: %f\n", num);
       lit = (lit_literal_t) lit_find_or_create_literal_from_num ((ecma_number_t) num);
     }
     else

@@ -23,6 +23,14 @@
 #include "jerry-port-default.h"
 #include "string_ext.h"
 
+uint32_t g_args = 0;
+uint32_t g_regs = 0;
+uint32_t g_ident = 0;
+uint32_t g_const_literal = 0;
+uint32_t g_literals = 0;
+uint32_t g_bytecode = 0;
+uint32_t g_real_bytecode = 0;
+
 /**
  * Maximum command line arguments number
  */

@@ -2218,11 +2218,26 @@ snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data 
     literal_end = args_p->literal_end;
     const_literal_end = args_p->const_literal_end;
     header_size = sizeof (cbc_uint8_arguments_t);
+    uint32_t total_code_size = (uint32_t)(args_p->header.size << MEM_ALIGNMENT_LOG);
+    g_args += args_p->argument_end;
+    g_regs += args_p->register_end;
+    g_ident += args_p->ident_end;
+    g_const_literal += args_p->const_literal_end;
+    g_literals += literal_end;
+    g_bytecode += total_code_size;
+    printf("Bytecode Size: %d, ByteCode Refs: %d\n", total_code_size, args_p->header.refs);
+    printf("args_end: %d, reg_end: %d, ident_end: %d\n", args_p->argument_end, args_p->register_end, args_p->ident_end);
+    printf("const_literal_end: %d, literal_end: %d\n", const_literal_end, literal_end);
+    uint32_t code_size = (uint32_t) (header_size + literal_end * sizeof (lit_cpointer_t));
+    printf("header size: %d, literal reference size: %d\n", header_size, literal_end * sizeof (lit_cpointer_t));
+    g_real_bytecode += (total_code_size - code_size);
+    printf("real bytecode size: %d\n", total_code_size - code_size);
   }
 
   if (copy_bytecode
       || (header_size + (literal_end * sizeof (uint16_t)) + BYTECODE_NO_COPY_TRESHOLD > code_size))
   {
+    printf("bytecode is copied to RAM!\n");
     bytecode_p = (ecma_compiled_code_t *) mem_heap_alloc_block (code_size);
 
     memcpy (bytecode_p, snapshot_data_p + offset, code_size);
@@ -2324,6 +2339,7 @@ jerry_exec_snapshot (const void *snapshot_p, /**< snapshot */
   }
 
   const jerry_snapshot_header_t *header_p = (const jerry_snapshot_header_t *) snapshot_data_p;
+  printf("lit table size: %d\n", header_p->lit_table_size);
 
   if (header_p->version != JERRY_SNAPSHOT_VERSION)
   {
@@ -2352,6 +2368,11 @@ jerry_exec_snapshot (const void *snapshot_p, /**< snapshot */
                                             sizeof (jerry_snapshot_header_t),
                                             lit_map_p,
                                             copy_bytecode);
+
+  printf("============================================================================================\n");
+  printf("lit table size: %d, literals num: %d\n", header_p->lit_table_size, literals_num);
+  printf("args: %d, regs: %d, ident: %d, const_literal: %d, literals: %d\n", g_args, g_regs, g_ident, g_const_literal, g_literals);
+  printf("bytecode: %d, real_bytecode: %d\n", g_bytecode, g_real_bytecode);
 
   if (lit_map_p != NULL)
   {
