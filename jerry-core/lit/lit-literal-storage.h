@@ -24,7 +24,7 @@
 /**
  * Represents the type of the record.
  */
-typedef enum
+typedef enum __attribute__ ((__packed__))
 {
   LIT_RECORD_TYPE_FREE = 0, /**< Free record that marks an empty space. It doesn't hold any values. */
   LIT_RECORD_TYPE_CHARSET = 1, /**< Charset record that holds characters. */

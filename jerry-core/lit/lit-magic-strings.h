@@ -26,7 +26,7 @@
 /**
  * Identifiers of ECMA and implementation-defined magic string constants
  */
-typedef enum
+typedef enum __attribute__ ((__packed__))
 {
 #define LIT_MAGIC_STRING_DEF(id, ascii_zt_string) \
      id,
