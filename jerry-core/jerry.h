@@ -82,6 +82,8 @@ extern uint32_t g_args;
 extern uint32_t g_regs;
 extern uint32_t g_ident;
 extern uint32_t g_const_literal;
+extern bool is_trace_snapshot;
+extern bool is_trace_string;
 
 /**
  * @}

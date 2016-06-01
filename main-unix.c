@@ -30,6 +30,8 @@ uint32_t g_const_literal = 0;
 uint32_t g_literals = 0;
 uint32_t g_bytecode = 0;
 uint32_t g_real_bytecode = 0;
+bool is_trace_snapshot = false;
+bool is_trace_string = false;
 
 /**
  * Maximum command line arguments number
@@ -295,6 +297,14 @@ main (int argc,
     else if (!strcmp ("--show-opcodes", argv[i]))
     {
       flags |= JERRY_FLAG_SHOW_OPCODES;
+    }
+    else if (!strcmp ("--trace-snapshot", argv[i]))  // TODO: Use JERRY FLAG.
+    {
+      is_trace_snapshot = true;
+    }
+    else if (!strcmp ("--trace-string", argv[i]))  // TODO: Use JERRY FLAG.
+    {
+      is_trace_string = true;
     }
     else if (!strcmp ("--save-snapshot-for-global", argv[i])
              || !strcmp ("--save-snapshot-for-eval", argv[i]))
