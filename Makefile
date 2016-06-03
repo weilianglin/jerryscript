@@ -76,6 +76,12 @@ BUILD_NAME:=
    BUILD_NAME:=$(BUILD_NAME)-LOG-$(LOG)
   endif
 
+ # ExternalMagicString
+  ifneq ($(EMS),)
+   CMAKE_DEFINES:=$(CMAKE_DEFINES) -DENABLE_EMS=$(EMS)
+   BUILD_NAME:=$(BUILD_NAME)-EMS-$(EMS)
+  endif
+
  # Fill error messages for builtin error objects
   ifneq ($(ERROR_MESSAGES),)
    CMAKE_DEFINES:=$(CMAKE_DEFINES) -DENABLE_ERROR_MESSAGES=$(ERROR_MESSAGES)

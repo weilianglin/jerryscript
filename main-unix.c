@@ -21,7 +21,9 @@
 #include "jerry.h"
 #include "jerry-port.h"
 #include "jerry-port-default.h"
+#ifdef JERRY_ENABLE_EMS
 #include "string_ext.h"
+#endif
 
 uint32_t g_args = 0;
 uint32_t g_regs = 0;
@@ -431,7 +433,9 @@ main (int argc,
 
   jerry_init (flags);
 
+#ifdef JERRY_ENABLE_EMS
   InitJerryMagicStringEx();
+#endif
 
   jerry_api_object_t *global_obj_p = jerry_api_get_global ();
   jerry_api_object_t *assert_func_p = jerry_api_create_external_function (assert_handler);
