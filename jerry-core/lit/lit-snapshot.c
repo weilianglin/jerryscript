@@ -413,7 +413,7 @@ lit_load_literals_from_snapshot (const uint8_t *lit_table_p, /**< buffer with li
         break;
       }
 
-      if (is_trace_snapshot) printf("number: %f\n", num);
+      if (is_trace_snapshot) printf("%f\n", num);
       lit = (lit_literal_t) lit_find_or_create_literal_from_num ((ecma_number_t) num);
     }
     else
