@@ -194,6 +194,11 @@ project (JerryCore C ASM)
    set(DEFINES_JERRY ${DEFINES_JERRY} JERRY_ENABLE_LOG)
   endif()
 
+ # EMS
+  if("${ENABLE_EMS}" STREQUAL "ON")
+    set(DEFINES_JERRY ${DEFINES_JERRY} JERRY_ENABLE_EMS)
+  endif()
+
  # Fill error messages for builtin error objects
   if("${ENABLE_ERROR_MESSAGES}" STREQUAL "ON")
    set(DEFINES_JERRY ${DEFINES_JERRY} JERRY_ENABLE_ERROR_MESSAGES)
